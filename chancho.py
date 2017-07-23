@@ -23,7 +23,7 @@ def download_4chan_thread(thread_url):
     images = get_4chan_images(thread_url)
     down_now, down_previously = download_urls(images, download_dir)
 
-    print("Thread {} complete!".format(thread_name))
+    print(f"Thread {thread_name} complete!")
     return down_now, down_previously
 
 
@@ -43,12 +43,13 @@ def download_urls(urls, download_dir=""):
     if len(download_dir) > 0 and not os.path.exists(download_dir):
         os.makedirs(download_dir)
 
-    # Ignore already downloaded
     downloaded_before = []
     before_file = os.path.join(download_dir, "done.json")
     if os.path.isfile(before_file):
         with open(before_file) as f:
             downloaded_before = json.load(f)
+
+    # Ignore downloaded before
     urls = [i for i in urls if i not in downloaded_before]
 
     # Download
@@ -56,7 +57,7 @@ def download_urls(urls, download_dir=""):
     for i, url in enumerate(urls):
         name = url.split("/")[-1]
         filename = os.path.join(download_dir, name)
-        print("Downloading {}/{} {}".format(i + 1, len(urls), url))
+        print(f"Downloading {i+1}/{len(urls)} {url}")
 
         try:
             with urllib.request.urlopen(url) as r, open(filename, 'wb') as f:
@@ -64,7 +65,7 @@ def download_urls(urls, download_dir=""):
                 f.write(data)
             downloaded.append(url)
         except urllib.error.HTTPError:
-            print("Error downloading {}".format(url))
+            print(f"Error downloading {url}")
 
         # Save
         with open(before_file, "w") as f:
@@ -173,8 +174,9 @@ if __name__ == "__main__":
             download_list = clean_download_list
 
             if prune_count > 0:
-                print("{} thread{} pruned ({}s old)".format(
-                    prune_count, "s" if prune_count > 1 else "", args.prune))
+                print(
+                    f"{prune_count} thread{'s' if prune_count > 1 else ''} pruned ({args.prune}s old)"
+                )
 
             # Save
             with open(prune_file, "w") as f:
@@ -189,7 +191,7 @@ if __name__ == "__main__":
                 continue
 
         # --rest between complete downloads
-        print("Waiting {}s to retry".format(args.wait))
+        print(f"Waiting {args.wait}s to retry")
         time.sleep(args.wait)
 
 #
