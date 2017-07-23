@@ -1,6 +1,11 @@
 """
 CHANCHO is a 4chan image downloader 
 that keeps watching threads for new changes
+
+
+TODO
+-d --directory To change the download directory
+
 """
 
 import argparse
@@ -193,8 +198,3 @@ if __name__ == "__main__":
         # --rest between complete downloads
         print(f"Waiting {args.wait}s to retry")
         time.sleep(args.wait)
-
-#
-""" TODO
--d --directory To change the download directory
-"""
