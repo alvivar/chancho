@@ -1,5 +1,6 @@
 """
-Chancho is a 4Chan Image Downloader that watch threads downloading all updates.
+CHANCHO is a 4chan image downloader 
+that keeps watching threads for new changes
 """
 
 import argparse
@@ -35,7 +36,7 @@ def get_4chan_images(thread_url):
 
 
 # Returns a tuple with the last downloaded urls, and all the previously
-# downloaded urls.
+# downloaded urls
 def download_urls(urls, download_dir=""):
 
     # Create the dir
