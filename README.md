@@ -1,10 +1,10 @@
 ```
-CHANCHO is a 4chan image downloader
-that keeps watching threads for new changes
-
       ___&
     e'^_ )
       " "
+CHANCHO is a 4chan image downloader
+that keeps watching threads for new changes
+
 usage: chancho.py [-h] [-u URL [URL ...]] [-w WAIT] [-p [PRUNE]]
 
 optional arguments:
