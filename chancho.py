@@ -194,5 +194,5 @@ if __name__ == "__main__":
 
 #
 """ TODO
--d --directory To select another download directory
+-d --directory To change the download directory
 """
