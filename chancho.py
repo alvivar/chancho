@@ -192,7 +192,6 @@ if __name__ == "__main__":
         time.sleep(args.wait)
 
 #
-""" TODO 
---directory 
-
+""" TODO
+-d --directory To select another download directory
 """
