@@ -1,17 +1,14 @@
 """
-CHANCHO is a 4chan image downloader 
+CHANCHO is a 4chan image downloader
 that keeps watching threads for new changes
 
 
-TODO
--d --directory To change the download directory
-
+TODO -d --directory To change the download directory
 """
 
 import argparse
 import json
 import os
-import sys
 import time
 import urllib
 
@@ -179,9 +176,8 @@ if __name__ == "__main__":
             download_list = clean_download_list
 
             if prune_count > 0:
-                print(
-                    f"{prune_count} thread{'s' if prune_count > 1 else ''} pruned ({args.prune}s old)"
-                )
+                print(f"{prune_count} thread{'s' if prune_count > 1 else ''} "
+                      f"pruned ({args.prune}s old)")
 
             # Save
             with open(prune_file, "w") as f:
