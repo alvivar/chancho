@@ -5,7 +5,7 @@ that keeps watching threads for new changes
 
 TODO
     -d --directory To change the download directory
-    Folder creation when there nothing to download
+    Avoid folder creation when there nothing to download
 """
 
 import argparse
