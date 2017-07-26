@@ -3,7 +3,7 @@ CHANCHO is a 4chan image downloader
 that keeps watching threads for new changes
 
 
-TODO 
+TODO
     -d --directory To change the download directory
     Folder creation when there nothing to download
 """
