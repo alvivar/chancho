@@ -1,4 +1,5 @@
 .vscode/
 downloads/
+dist/
 chanlist.json
 pruned.json

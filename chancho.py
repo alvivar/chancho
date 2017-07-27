@@ -5,24 +5,28 @@ that keeps watching threads for new changes
 
 TODO
     -d --directory To change the download directory
-    Avoid folder creation when there nothing to download
+    Avoid folder creation when there is nothing to download
+    Validate urls as threads
+    Bot mode (input)
 """
 
+import threading
 import argparse
 import json
 import os
+import sys
 import time
 import urllib
+from multiprocessing import Queue  # noqa cxfreeze fx
 
 import requests
-from lxml import html
+from lxml import html, _elementpath  # noqa cxfreeze fx
 
 
-def download_4chan_thread(thread_url):
+def download_4chan_thread(thread_url, path):
 
     thread_name = thread_url.split("/")[-1]
-    current_dir = os.path.normpath(os.path.dirname(__file__))
-    download_dir = os.path.join(current_dir, "downloads", thread_name)
+    download_dir = os.path.join(path, "downloads", thread_name)
 
     images = get_4chan_images(thread_url)
     down_now, down_previously = download_urls(images, download_dir)
@@ -106,6 +110,7 @@ if __name__ == "__main__":
         nargs="?",
         type=int,
         const=3600)
+    parser.add_argument("--bot", help="Let's talk", action="store_true")
 
     # ALT
     # if len(sys.argv[1:]) == 0:
@@ -115,9 +120,33 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Files
-    current_dir = os.path.normpath(os.path.dirname(__file__))
+
+    # frozen / not frozen, cxfreeze compatibility
+    if getattr(sys, 'frozen', False):
+        current_dir = os.path.normpath(os.path.dirname(sys.executable))
+    else:
+        current_dir = os.path.normpath(os.path.dirname(__file__))
+
     threads_file = os.path.join(current_dir, "chanlist.json")
     prune_file = os.path.join(current_dir, "pruned.json")
+
+    # BOT
+    bot_urls = []
+
+    def BOT():
+        while True:
+            print()
+            text = input(
+                "Chancho: Just paste thread urls here and I will add them! "
+                "Don't mind the log.\n")
+
+            global bot_urls
+            bot_urls += [text]
+            print(text)
+
+    thread = threading.Thread(target=BOT)
+    thread.daemon = True
+    thread.start()
 
     # Downloads
     while True:
@@ -128,10 +157,11 @@ if __name__ == "__main__":
             with open(threads_file) as f:
                 download_list = json.load(f)
 
-        # Add the --url[s]
-        for u in args.url:
+        # Add the --url[s] and the input from the bot
+        for u in args.url + bot_urls:
             # TODO validate url
             download_list[u] = download_list.get(u, {})
+        bot_urls = []
 
         # Exit on empty
         if len(download_list) < 1:
@@ -141,7 +171,8 @@ if __name__ == "__main__":
         # Download everything, update statistics
         else:
             for k, v in download_list.items():
-                down_now, down_previously = download_4chan_thread(k)
+                down_now, down_previously = download_4chan_thread(
+                    k, current_dir)
                 v['images'] = len(down_now) + len(down_previously)
                 if len(down_now) > 0:
                     v['found'] = time.time()
