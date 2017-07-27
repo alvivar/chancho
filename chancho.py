@@ -135,14 +135,9 @@ if __name__ == "__main__":
 
     def BOT():
         while True:
-            print()
-            text = input(
-                "Chancho: Just paste thread urls here and I will add them! "
-                "Don't mind the log.\n")
-
+            text = input("chancho: give me more\n")
             global bot_urls
             bot_urls += [text]
-            print(text)
 
     thread = threading.Thread(target=BOT)
     thread.daemon = True
