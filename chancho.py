@@ -93,7 +93,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-u",
-        "--url",
+        "--urls",
         help="4chan threads to be added to the download list",
         nargs="+",
         default=[])
@@ -110,7 +110,7 @@ if __name__ == "__main__":
         nargs="?",
         type=int,
         const=3600)
-    parser.add_argument("--bot", help="Let's talk", action="store_true")
+    parser.add_argument("--bot", help="Feed me urls", action="store_true")
 
     # ALT
     # if len(sys.argv[1:]) == 0:
@@ -133,15 +133,18 @@ if __name__ == "__main__":
     # BOT
     bot_urls = []
 
-    def BOT():
-        while True:
-            text = input("chancho: give me more\n")
-            global bot_urls
-            bot_urls += [text]
+    if args.bot:
+        print('Feed me urls:')
 
-    thread = threading.Thread(target=BOT)
-    thread.daemon = True
-    thread.start()
+        def BOT():
+            while True:
+                text = input()
+                global bot_urls
+                bot_urls += [text]
+
+        thread = threading.Thread(target=BOT)
+        thread.daemon = True
+        thread.start()
 
     # Downloads
     while True:
@@ -152,17 +155,23 @@ if __name__ == "__main__":
             with open(threads_file) as f:
                 download_list = json.load(f)
 
-        # Add the --url[s] and the input from the bot
-        for u in args.url + bot_urls:
+        # Add the --urls and the input from the bot
+        for u in args.urls + bot_urls:
             # TODO validate url
             download_list[u] = download_list.get(u, {})
         bot_urls = []
 
         # Exit on empty
         if len(download_list) < 1:
+
+            # --bot
+            if args.bot:
+                continue
+
             parser.print_usage()
             print("the download list is empty, try '-u' to add urls")
             parser.exit()
+
         # Download everything, update statistics
         else:
             for k, v in download_list.items():
@@ -221,4 +230,6 @@ if __name__ == "__main__":
 
         # --rest between complete downloads
         print(f"Waiting {args.wait}s to retry")
+        if args.bot:
+            print("Feed me urls:")
         time.sleep(args.wait)
