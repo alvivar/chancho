@@ -4,10 +4,10 @@ that keeps watching threads for new changes
 
 
 TODO
-    -d --directory To change the download directory
-    Avoid folder creation when there is nothing to download
     Validate urls as threads
-    Bot mode (input)
+    Avoid folder creation when there is nothing to download
+    Ctrl-C exception handled to stop
+    -d --directory To change the download directory
 """
 
 import threading
