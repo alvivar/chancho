@@ -1,0 +1,10 @@
+
+    Todo
+        Download current top thread in board
+        Validate urls as threads
+        Avoid folder creation when there is nothing to download
+        Bug when adding empty / invalid strings to be bot input
+        Clean empty folders
+        Ctrl-C exception handled to stop
+        -d --directory To change the download directory
+        As bot input detect threads or boards?
