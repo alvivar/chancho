@@ -1,30 +1,22 @@
 """
 CHANCHO is a 4chan image downloader
 that keeps watching threads for new changes
-
-
-TODO
-    Validate urls as threads
-    Avoid folder creation when there is nothing to download
-    Ctrl-C exception handled to stop
-    -d --directory To change the download directory
 """
 
-import threading
 import argparse
 import json
 import os
 import sys
+import threading
 import time
 import urllib
-from multiprocessing import Queue  # noqa cxfreeze fx
+from multiprocessing import Queue  # cxfreeze fx
 
 import requests
-from lxml import html, _elementpath  # noqa cxfreeze fx
+from lxml import _elementpath, html  # cxfreeze fx
 
 
 def download_4chan_thread(thread_url, path):
-
     thread_name = thread_url.split("/")[-1]
     download_dir = os.path.join(path, "downloads", thread_name)
 
@@ -36,11 +28,21 @@ def download_4chan_thread(thread_url, path):
 
 
 def get_4chan_images(thread_url):
-
     page = requests.get(thread_url)
     tree = html.fromstring(page.content)
     pics = tree.xpath("//div[contains(@class, 'fileText')]/a/@href")
     return ["http://" + i[2:] for i in pics]
+
+
+def get_top_threads_from_board(board):
+    """ Get all the top threads from a board, ignoring sticky posts. """
+    board_url = f"http://boards.4chan.org/{board}"
+    page = requests.get(board_url)
+    tree = html.fromstring(page.content)
+    threads = tree.xpath(
+        "//div[@class='board']/div[@class='thread' and not(.//img[@alt='Sticky'])]/@id"
+    )
+    return [f"http://boards.4chan.org/{board}/thread/{t[1:]}" for t in threads]
 
 
 # Returns a tuple with the last downloaded urls, and all the previously
@@ -48,7 +50,7 @@ def get_4chan_images(thread_url):
 def download_urls(urls, download_dir=""):
 
     # Create the dir
-    if len(download_dir) > 0 and not os.path.exists(download_dir):
+    if download_dir and not os.path.exists(download_dir):
         os.makedirs(download_dir)
 
     downloaded_before = []
@@ -92,9 +94,15 @@ if __name__ == "__main__":
     # Command line args
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-u",
-        "--urls",
-        help="4chan threads to be added to the download list",
+        "-t",
+        "--threads",
+        help="add threads to the download list",
+        nargs="+",
+        default=[])
+    parser.add_argument(
+        "-b",
+        "--boards",
+        help="add the top thread from each boards to the download list",
         nargs="+",
         default=[])
     parser.add_argument(
@@ -112,29 +120,22 @@ if __name__ == "__main__":
         const=3600)
     parser.add_argument("--bot", help="Feed me urls", action="store_true")
 
-    # ALT
-    # if len(sys.argv[1:]) == 0:
-    #     parser.print_usage()
-    #     parser.exit()
-
     args = parser.parse_args()
 
-    # Files
-
     # frozen / not frozen, cxfreeze compatibility
-    if getattr(sys, 'frozen', False):
-        current_dir = os.path.normpath(os.path.dirname(sys.executable))
-    else:
-        current_dir = os.path.normpath(os.path.dirname(__file__))
+    current_dir = os.path.normpath(
+        os.path.dirname(
+            sys.executable if getattr(sys, 'frozen', False) else __file__))
 
+    # Files
     threads_file = os.path.join(current_dir, "chanlist.json")
     prune_file = os.path.join(current_dir, "pruned.json")
 
-    # BOT
+    # BOT mode
     bot_urls = []
 
     if args.bot:
-        print('Feed me urls:')
+        print('Feed me threads:')
 
         def BOT():
             while True:
@@ -155,14 +156,23 @@ if __name__ == "__main__":
             with open(threads_file) as f:
                 download_list = json.load(f)
 
-        # Add the --urls and the input from the bot
-        for u in args.urls + bot_urls:
+        # --boards Top threads
+        top_threads = []
+        if (args.boards):
+            top_threads = [
+                thread
+                for board in args.boards
+                for thread in get_top_threads_from_board(board)[:1]
+            ]
+
+        # Add the --threads, the input from the bot and the top threads from --boards
+        for u in args.threads + bot_urls + top_threads:
             # TODO validate url
             download_list[u] = download_list.get(u, {})
         bot_urls = []
 
         # Exit on empty
-        if len(download_list) < 1:
+        if not download_list:
 
             # --bot
             if args.bot:
@@ -178,7 +188,7 @@ if __name__ == "__main__":
                 down_now, down_previously = download_4chan_thread(
                     k, current_dir)
                 v['images'] = len(down_now) + len(down_previously)
-                if len(down_now) > 0:
+                if down_now:
                     v['found'] = time.time()
                     v['prune'] = 0
                 else:
