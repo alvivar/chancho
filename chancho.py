@@ -10,10 +10,10 @@ import sys
 import threading
 import time
 import urllib
-from multiprocessing import Queue  # cxfreeze fx
+from multiprocessing import Queue
 
 import requests
-from lxml import _elementpath, html  # cxfreeze fx
+from lxml import _elementpath, html
 
 
 def download_4chan_thread(thread_url, path):
@@ -45,9 +45,9 @@ def get_top_threads_from_board(board):
     return [f"http://boards.4chan.org/{board}/thread/{t[1:]}" for t in threads]
 
 
-# Returns a tuple with the last downloaded urls, and all the previously
-# downloaded urls
 def download_urls(urls, download_dir=""):
+    """ Returns a tuple with the last downloaded urls, and all the previously
+    downloaded urls. """
 
     # Create the dir
     if download_dir and not os.path.exists(download_dir):
@@ -119,7 +119,6 @@ if __name__ == "__main__":
         type=int,
         const=3600)
     parser.add_argument("--bot", help="Feed me urls", action="store_true")
-
     args = parser.parse_args()
 
     # frozen / not frozen, cxfreeze compatibility
@@ -165,6 +164,9 @@ if __name__ == "__main__":
                 for thread in get_top_threads_from_board(board)[:1]
             ]
 
+            if top_threads:
+                print(f"Top thread found: {top_threads[0]}")
+
         # Add the --threads, the input from the bot and the top threads from --boards
         for u in args.threads + bot_urls + top_threads:
             # TODO validate url
@@ -204,7 +206,7 @@ if __name__ == "__main__":
                     json.dump(download_list, f)
 
         # --prune
-        if args.prune is not None:
+        if args.prune:
 
             # Read archive
             prune_list = {}
