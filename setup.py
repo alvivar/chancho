@@ -2,8 +2,10 @@ from cx_Freeze import setup, Executable
 
 options = {
     'build_exe': {
-        'includes':
-        ['lxml.html', 'lxml._elementpath', 'Queue.multiprocessing']
+        'includes': [
+            'Queue.multiprocessing', 'idna.idnadata', 'lxml._elementpath',
+            'lxml.html'
+        ]
     }
 }
 
