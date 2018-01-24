@@ -142,26 +142,35 @@ if __name__ == "__main__":
     PRUNE_FILE = os.path.join(HOMEDIR, "pruned.json")
 
     # BOT mode
+    REPEAT = True
     BOT_URLS = []
 
     if ARGS.bot:
-        print('Feed me threads:')
 
-        def BOT():
+        def botmode():
             """
                 Handles the user input.
             """
             while True:
                 text = input()
-                global BOT_URLS
-                BOT_URLS += [text]
 
-        THREAD = threading.Thread(target=BOT)
+                text = text.strip().lower()
+
+                if text == 'q':
+                    print("Bye!")
+                    global REPEAT
+                    REPEAT = False
+                    sys.exit(0)
+                else:
+                    global BOT_URLS
+                    BOT_URLS += [text]
+
+        THREAD = threading.Thread(target=botmode)
         THREAD.daemon = True
         THREAD.start()
 
     # Downloads
-    while True:
+    while REPEAT:
 
         # Read the queue
         DOWNLOAD_LIST = {}
@@ -255,6 +264,11 @@ if __name__ == "__main__":
 
         # --rest between complete downloads
         print(f"Waiting {ARGS.wait}s to retry")
+
         if ARGS.bot:
-            print("Feed me threads:")
-        time.sleep(ARGS.wait)
+            print("Feed me threads urls | 'q' to exit:")
+
+        WAIT = 0
+        while REPEAT and WAIT < ARGS.wait:
+            WAIT += 1
+            time.sleep(1)
