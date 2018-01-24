@@ -2,7 +2,7 @@
     Run 'python cxfreezesetup.py build' to create a executable with cx_Freeze.
 """
 
-from cx_Freeze import setup, Executable
+from cx_Freeze import Executable, setup
 
 OPTIONS = {
     'build_exe': {
