@@ -29,7 +29,7 @@ def download_4chan_thread(thread_url, path):
     if now or previously:
         print(f"Thread {thread_name} complete!")
     else:
-        print(f"Empty or wrong url: {thread_url}")
+        print(f"Thread empty or wrong url: {thread_url}")
 
     return now, previously
 
@@ -269,7 +269,7 @@ if __name__ == "__main__":
                 continue
 
         # --rest between complete downloads
-        print(f"\nWaiting {ARGS.wait}s to retry")
+        print(f"\nWaiting {ARGS.wait} seconds to retry")
         print("Feed me threads urls | 'q' to quit: ")
 
         WAIT = 0
