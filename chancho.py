@@ -25,7 +25,11 @@ def download_4chan_thread(thread_url, path):
 
     images = get_4chan_images(thread_url)
     now, previously = download_urls(images, download_dir)
-    print(f"Thread {thread_name} complete!")
+
+    if now or previously:
+        print(f"Thread {thread_name} complete!")
+    else:
+        print(f"Empty or wrong url: {thread_url}")
 
     return now, previously
 
@@ -34,9 +38,15 @@ def get_4chan_images(thread_url):
     """
         Return a list with all the images urls from a thread.
     """
-    page = requests.get(thread_url)
-    tree = html.fromstring(page.content)
-    pics = tree.xpath("//div[contains(@class, 'fileText')]/a/@href")
+
+    try:
+        page = requests.get(thread_url)
+        tree = html.fromstring(page.content)
+        pics = tree.xpath("//div[contains(@class, 'fileText')]/a/@href")
+    except requests.exceptions.MissingSchema:
+        print(f"Error with url: {thread_url}")
+        return []
+
     return ["http://" + i[2:] for i in pics]
 
 
@@ -59,6 +69,10 @@ def download_urls(urls, download_dir=""):
         Downloads files from a list of urls. Return a tuple with 2 lists, one
         of downloaded urls, the other of previously downloaded.
     """
+
+    # It needs to be something
+    if not urls:
+        return [], []
 
     # Create the dir
     if download_dir and not os.path.exists(download_dir):
@@ -85,12 +99,13 @@ def download_urls(urls, download_dir=""):
                 data = r.read()
                 f.write(data)
             downloaded.append(url)
+
+            # Save
+            with open(before_file, "w") as f:
+                json.dump(downloaded + downloaded_before, f)
+
         except urllib.error.HTTPError:
             print(f"Error downloading {url}")
-
-        # Save
-        with open(before_file, "w") as f:
-            json.dump(downloaded + downloaded_before, f)
 
     return downloaded, downloaded_before
 
@@ -129,7 +144,6 @@ if __name__ == "__main__":
         nargs="?",
         type=int,
         const=3600)
-    PARSER.add_argument("--bot", help="Feed me threads", action="store_true")
     ARGS = PARSER.parse_args()
 
     # frozen / not frozen, cxfreeze compatibility
@@ -141,33 +155,37 @@ if __name__ == "__main__":
     THREAD_FILE = os.path.join(HOMEDIR, "chanlist.json")
     PRUNE_FILE = os.path.join(HOMEDIR, "pruned.json")
 
-    # BOT mode
+    # Input detection
     REPEAT = True
     BOT_URLS = []
 
-    if ARGS.bot:
+    def botmode():
+        """
+            Handles the user input.
+        """
+        while True:
+            text = input()
 
-        def botmode():
-            """
-                Handles the user input.
-            """
-            while True:
-                text = input()
+            text = text.strip().lower()
 
-                text = text.strip().lower()
+            if text == 'q':
+                print("\nBye!")
+                global REPEAT
+                REPEAT = False
+                sys.exit(0)
+            else:
+                # Assume urls
+                urls = text.split()
+                urls = [
+                    i for i in urls if i and urllib.parse.urlparse(i).scheme
+                ]
 
-                if text == 'q':
-                    print("Bye!")
-                    global REPEAT
-                    REPEAT = False
-                    sys.exit(0)
-                else:
-                    global BOT_URLS
-                    BOT_URLS += [text]
+                global BOT_URLS
+                BOT_URLS += urls
 
-        THREAD = threading.Thread(target=botmode)
-        THREAD.daemon = True
-        THREAD.start()
+    THREAD = threading.Thread(target=botmode)
+    THREAD.daemon = True
+    THREAD.start()
 
     # Downloads
     while REPEAT:
@@ -196,36 +214,24 @@ if __name__ == "__main__":
             DOWNLOAD_LIST[u] = DOWNLOAD_LIST.get(u, {})
         BOT_URLS = []
 
-        # Exit on empty
-        if not DOWNLOAD_LIST:
-
-            # --bot
-            if ARGS.bot:
-                continue
-
-            PARSER.print_usage()
-            print("the download list is empty, try '-u' to add urls")
-            PARSER.exit()
-
         # Download everything, update statistics
-        else:
-            for k, v in DOWNLOAD_LIST.items():
-                down_now, down_previously = download_4chan_thread(k, HOMEDIR)
-                v['images'] = len(down_now) + len(down_previously)
-                if down_now:
-                    v['found'] = time.time()
-                    v['prune'] = 0
-                else:
-                    # Hack to avoid weird prune values when the field doesn't
-                    # exist on already downloaded threads
-                    v['found'] = v.get('found', time.time())
+        for k, v in DOWNLOAD_LIST.items():
+            down_now, down_previously = download_4chan_thread(k, HOMEDIR)
+            v['images'] = len(down_now) + len(down_previously)
+            if down_now:
+                v['found'] = time.time()
+                v['prune'] = 0
+            else:
+                # Hack to avoid weird prune values when the field doesn't
+                # exist on already downloaded threads
+                v['found'] = v.get('found', time.time())
 
-                    prune = time.time() - v['found']
-                    v['prune'] = prune if prune > 0 else 0
+                prune = time.time() - v['found']
+                v['prune'] = prune if prune > 0 else 0
 
-                # Save
-                with open(THREAD_FILE, "w") as f:
-                    json.dump(DOWNLOAD_LIST, f)
+            # Save
+            with open(THREAD_FILE, "w") as f:
+                json.dump(DOWNLOAD_LIST, f)
 
         # --prune
         if ARGS.prune:
@@ -263,12 +269,10 @@ if __name__ == "__main__":
                 continue
 
         # --rest between complete downloads
-        print(f"Waiting {ARGS.wait}s to retry")
-
-        if ARGS.bot:
-            print("Feed me threads urls | 'q' to exit:")
+        print(f"\nWaiting {ARGS.wait}s to retry")
+        print("Feed me threads urls | 'q' to quit: ")
 
         WAIT = 0
-        while REPEAT and WAIT < ARGS.wait:
+        while REPEAT and WAIT <= ARGS.wait:
             WAIT += 1
             time.sleep(1)
