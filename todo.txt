@@ -2,15 +2,17 @@
         TO DO
 
 
-    Validate urls as threads
     Avoid folder creation when there is nothing to download
-    Bug when adding empty / invalid strings to be bot input
     Ctrl-C exception handling to stop
-    -d --directory To change the download directory
     As bot input detect threads and boards?
+    -d --directory To change the download directory
 
 
     2018/01/24 04:42 pm
+    x 'q' to quit
+    x Bot input
+    x Bug when adding empty / invalid strings to be bot input
+    x Validate urls as threads
     x Better name for cx_Freeze setup
     x Better comments, lint conventions +1
 
