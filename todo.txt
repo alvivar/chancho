@@ -2,6 +2,7 @@
         TO DO
 
 
+    Rest between request?
     Avoid folder creation when there is nothing to download
     Ctrl-C exception handling to stop
     As bot input detect threads and boards?
