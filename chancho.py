@@ -15,53 +15,53 @@ import requests
 from lxml import html
 
 
-def download_4chan_thread(thread_url, path):
+def download_4chan_thread(threadurl, path):
     """
         Downloads all images from a thread. Return a tuple with 2 lists, one of
         downloaded urls, the other of previously downloaded.
     """
-    thread_name = thread_url.split("/")[-1]
+    thread_name = threadurl.split("/")[-1]
     download_dir = os.path.join(path, "downloads", thread_name)
 
-    images = get_4chan_images(thread_url)
+    images = get_4chan_images(threadurl)
     now, previously = download_urls(images, download_dir)
 
     if now or previously:
         print(f"Thread {thread_name} complete!")
     else:
-        print(f"Thread empty or wrong url: {thread_url}")
+        print(f"Thread empty or wrong url: {threadurl}")
 
     return now, previously
 
 
-def get_4chan_images(thread_url):
+def get_4chan_images(threadurl):
     """
         Return a list with all the images urls from a thread.
     """
 
     try:
-        page = requests.get(thread_url)
+        page = requests.get(threadurl)
         tree = html.fromstring(page.content)
         pics = tree.xpath("//div[contains(@class, 'fileText')]/a/@href")
     except requests.exceptions.MissingSchema:
-        print(f"Error with url: {thread_url}")
+        print(f"Error with url: {threadurl}")
         return []
 
     return ["http://" + i[2:] for i in pics]
 
 
-def get_threads_from_board(board):
+def get_threads_from_board(board, baseurl='http://boards.4chan.org'):
     """
-        Return a list with all the url threads from a board, ignoring sticky
+        Return a list with all the threads urls from a board, ignoring sticky
         posts.
     """
-    board_url = f"http://boards.4chan.org/{board}"
+    board_url = f"{baseurl}/{board}"
     page = requests.get(board_url)
     tree = html.fromstring(page.content)
     threads = tree.xpath(
         "//div[@class='board']/div[@class='thread' and not(.//img[@alt='Sticky'])]/@id"
     )
-    return [f"http://boards.4chan.org/{board}/thread/{t[1:]}" for t in threads]
+    return [f"{baseurl}/{board}/thread/{t[1:]}" for t in threads]
 
 
 def download_urls(urls, download_dir=""):
@@ -112,13 +112,16 @@ def download_urls(urls, download_dir=""):
 
 if __name__ == "__main__":
 
-    print("""
+    CHANCHO = """
       ___&
     e'^_ )
-      " " """)
+      " " """
+    print(CHANCHO)
 
     # Command line
-    PARSER = argparse.ArgumentParser()
+    PARSER = argparse.ArgumentParser(
+        description=
+        "4chan image downloader that keeps watching threads for new changes")
     PARSER.add_argument(
         "-t",
         "--threads",
@@ -140,7 +143,7 @@ if __name__ == "__main__":
     PARSER.add_argument(
         "-p",
         "--prune",
-        help="archive old threads, 3600 seconds default (1h)",
+        help="archive old threads, 3600 seconds (1h) default",
         nargs="?",
         type=int,
         const=3600)
@@ -155,7 +158,7 @@ if __name__ == "__main__":
     THREAD_FILE = os.path.join(HOMEDIR, "chanlist.json")
     PRUNE_FILE = os.path.join(HOMEDIR, "pruned.json")
 
-    # Input detection
+    # Repeat cycle and input detection
     REPEAT = True
     BOT_URLS = []
 
@@ -168,13 +171,14 @@ if __name__ == "__main__":
             text = text.strip().lower()
 
             if text == 'q':
-                print("\nBye!")
+                print(CHANCHO + " Bye!")
                 global REPEAT
                 REPEAT = False
                 sys.exit(0)
             else:
                 # Assume urls
-                urls = text.split()
+                urls = text.replace("http", " http")
+                urls = urls.split()
                 urls = [i for i in urls if urllib.parse.urlparse(i).scheme]
                 global BOT_URLS
                 BOT_URLS += urls
@@ -265,10 +269,10 @@ if __name__ == "__main__":
                 continue
 
         # --rest between complete downloads
-        print(f"\nWaiting {ARGS.wait} seconds to retry")
-        print("Feed me threads urls | 'q' to quit: ")
+        print(f"\nWaiting {ARGS.wait} seconds to retry...")
+        print("Feed me threads urls or 'q' to quit: ")
 
         WAIT = 0
-        while REPEAT and WAIT <= ARGS.wait:
+        while REPEAT and WAIT < ARGS.wait:
             WAIT += 1
             time.sleep(1)
