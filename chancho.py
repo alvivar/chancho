@@ -165,7 +165,6 @@ if __name__ == "__main__":
         """
         while True:
             text = input()
-
             text = text.strip().lower()
 
             if text == 'q':
@@ -176,10 +175,7 @@ if __name__ == "__main__":
             else:
                 # Assume urls
                 urls = text.split()
-                urls = [
-                    i for i in urls if i and urllib.parse.urlparse(i).scheme
-                ]
-
+                urls = [i for i in urls if urllib.parse.urlparse(i).scheme]
                 global BOT_URLS
                 BOT_URLS += urls
 
