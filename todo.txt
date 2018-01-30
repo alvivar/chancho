@@ -2,14 +2,16 @@
         TO DO
 
 
+    A bot option to display the time left
+    Change file download technique to shutils
     Rest between request?
-    Avoid folder creation when there is nothing to download
     Ctrl-C exception handling to stop
     As bot input detect threads and boards?
     -d --directory To change the download directory
 
 
     2018/01/24 04:42 pm
+    x Avoid folder creation when there is nothing to download
     x 'q' to quit
     x Bot input
     x Bug when adding empty / invalid strings to be bot input
