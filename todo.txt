@@ -2,6 +2,7 @@
         TO DO
 
 
+    -s --start To start the process, else show help
     A bot option to display the time left
     Change file download technique to shutils
     Rest between request?
