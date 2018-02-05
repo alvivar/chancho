@@ -14,6 +14,8 @@ import urllib
 import requests
 from lxml import html
 
+import cutetime
+
 
 def download_4chan_thread(threadurl, path):
     """
@@ -29,7 +31,7 @@ def download_4chan_thread(threadurl, path):
     if now or previously:
         print(f"Thread {thread_name} complete!")
     else:
-        print(f"Thread empty or wrong url: {threadurl}")
+        print(f"Invalid thread (no images): {threadurl}")
 
     return now, previously
 
@@ -44,7 +46,7 @@ def get_4chan_images(threadurl):
         tree = html.fromstring(page.content)
         pics = tree.xpath("//div[contains(@class, 'fileText')]/a/@href")
     except requests.exceptions.MissingSchema:
-        print(f"Error with url: {threadurl}")
+        print(f"Invalid url: {threadurl}")
         return []
 
     return ["http://" + i[2:] for i in pics]
@@ -123,15 +125,18 @@ if __name__ == "__main__":
         description=
         "4chan image downloader that keeps watching threads for new changes")
     PARSER.add_argument(
+        "-s", "--start", help="start the cycle", action="store_true")
+    PARSER.add_argument(
         "-t",
         "--threads",
-        help="add threads to the download list",
+        help="add threads urls to the download list",
         nargs="+",
         default=[])
     PARSER.add_argument(
         "-b",
         "--boards",
-        help="add the top thread from each boards to the download list",
+        help=
+        "add boards names to be watched, the top thread from each board will be added to the download list after every cycle",
         nargs="+",
         default=[])
     PARSER.add_argument(
@@ -149,6 +154,12 @@ if __name__ == "__main__":
         const=3600)
     ARGS = PARSER.parse_args()
 
+    # --start is required
+    if not ARGS.start:
+        print("try -s to start the cycle")
+        PARSER.print_usage()
+        PARSER.exit()
+
     # frozen / not frozen, cxfreeze compatibility
     HOMEDIR = os.path.normpath(
         os.path.dirname(
@@ -160,7 +171,6 @@ if __name__ == "__main__":
 
     # Repeat cycle and input detection
     REPEAT = True
-    BOT_URLS = []
 
     def botmode():
         """
@@ -169,19 +179,56 @@ if __name__ == "__main__":
         while True:
             text = input()
             text = text.strip().lower()
+            commands = text.split()
 
-            if text == 'q':
+            if len(commands) < 1:
+                return
+            commands[0] = commands[0].replace('-', '')
+
+            # Quit
+            if commands[0] == 'q':
                 print(CHANCHO + " Bye!")
+                time.sleep(1)
+
                 global REPEAT
                 REPEAT = False
                 sys.exit(0)
+
+            # Start
+            elif commands[0] in ['s', 'start']:
+                print("chancho: i'm already running!")
+
+            # Help
+            elif commands[0] in ['h', 'help']:
+                PARSER.print_help()
+
+            # Threads
+            elif commands[0] in ['t', 'thread', 'threads']:
+                ARGS.threads += commands[1:] if len(commands) > 1 else []
+                print(f"chancho: adding threads: {' '.join(commands[1:])}")
+
+            # Boards
+            elif commands[0] in ['b', 'board', 'boards']:
+                ARGS.boards += commands[1:] if len(commands) > 1 else []
+                print(f"chancho: adding boards: {', '.join(commands[1:])}")
+
+            # Wait
+            elif commands[0] in ['w', 'wait']:
+                ARGS.wait = cutetime.toseconds(
+                    commands[1]) if len(commands) > 1 else 60
+                print(f"chancho: wait time is {ARGS.wait}s now")
+
+            # Prune
+            elif commands[0] in ['p', 'prune']:
+                ARGS.prune = cutetime.toseconds(
+                    commands[1]) if len(commands) > 1 else 3600
+                print(f"chancho: prune time is {ARGS.prune}s now")
+
             else:
-                # Assume urls
-                urls = text.replace("http", " http")
-                urls = urls.split()
-                urls = [i for i in urls if urllib.parse.urlparse(i).scheme]
-                global BOT_URLS
-                BOT_URLS += urls
+                print(f"chancho: i don't understand '{commands[0]}', try")
+                PARSER.print_usage()
+
+            print()
 
     THREAD = threading.Thread(target=botmode)
     THREAD.daemon = True
@@ -200,8 +247,7 @@ if __name__ == "__main__":
         TOP_THREADS = []
         if (ARGS.boards):
             TOP_THREADS = [
-                thread
-                for board in ARGS.boards
+                thread for board in ARGS.boards
                 for thread in get_threads_from_board(board)[:1]
             ]
 
@@ -209,10 +255,9 @@ if __name__ == "__main__":
                 print(f"Top thread found: {TOP_THREADS[0]}")
 
         # Add the --threads, the input from the bot and the top threads from --boards
-        for u in ARGS.threads + BOT_URLS + TOP_THREADS:
+        for u in ARGS.threads + TOP_THREADS:
             # TODO validate url
             DOWNLOAD_LIST[u] = DOWNLOAD_LIST.get(u, {})
-        BOT_URLS = []
 
         # Download everything, update statistics
         for k, v in DOWNLOAD_LIST.items():
@@ -270,7 +315,7 @@ if __name__ == "__main__":
 
         # --rest between complete downloads
         print(f"\nWaiting {ARGS.wait} seconds to retry...")
-        print("Feed me threads urls or 'q' to quit: ")
+        print("Feed me commands | 'q' to quit: ")
 
         WAIT = 0
         while REPEAT and WAIT < ARGS.wait:
