@@ -199,7 +199,7 @@ if __name__ == "__main__":
                 print("chancho: i'm already running!")
 
             # Help
-            elif commands[0] in ['h', 'help']:
+            elif commands[0] in ['h', 'help', 'command', 'commands']:
                 PARSER.print_help()
 
             # Threads
@@ -315,7 +315,7 @@ if __name__ == "__main__":
 
         # --rest between complete downloads
         print(f"\nWaiting {ARGS.wait} seconds to retry...")
-        print("Feed me commands | 'q' to quit: ")
+        print("Feed me commands | 'q' to quit: \n")
 
         WAIT = 0
         while REPEAT and WAIT < ARGS.wait:
