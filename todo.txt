@@ -3,8 +3,9 @@
 
 
     Change file download technique to shutils
-
+    Defaults should be GLOBALS, should be defined only once
     A bot option to display the time left
+
     Rest between request?
     Ctrl-C exception handling to stop
     -d --directory To change the download directory
