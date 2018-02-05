@@ -2,17 +2,19 @@
         TO DO
 
 
-    -s --start To start the process, else show help
-    Specify on -h threads urls vs board names
-    Support threads by name, not only url?
+    Change file download technique to shutils
 
     A bot option to display the time left
-    Change file download technique to shutils
     Rest between request?
     Ctrl-C exception handling to stop
-    As bot input detect threads and boards?
     -d --directory To change the download directory
 
+
+    2018/02/05 04:28 pm
+    x As bot input detect threads and boards?
+    x -s --start To start the process, else show help
+    x Specify on -h threads urls vs board names
+    x Support threads by name, not only url?
 
     2018/01/24 04:42 pm
     x Avoid folder creation when there is nothing to download
