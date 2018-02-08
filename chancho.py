@@ -205,7 +205,8 @@ if __name__ == "__main__":
             # Threads
             elif commands[0] in ['t', 'thread', 'threads']:
                 ARGS.threads += commands[1:] if len(commands) > 1 else []
-                print(f"chancho: adding threads: {' '.join(commands[1:])}")
+                print(
+                    f"chancho: adding threads urls: {' '.join(commands[1:])}")
 
             # Boards
             elif commands[0] in ['b', 'board', 'boards']:
