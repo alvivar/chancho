@@ -1,6 +1,9 @@
 
         TO DO
 
+    Bug when everything is pruned
+    Destroy the commands, go back to add boards or threads
+    --repeat shouldn't be default
 
     Change file download technique to shutils
     Defaults should be GLOBALS, should be defined only once
