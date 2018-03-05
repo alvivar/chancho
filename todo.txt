@@ -1,9 +1,6 @@
 
         TO DO
 
-    Bug when everything is pruned
-    Destroy the commands, go back to add boards or threads
-    --repeat shouldn't be default
 
     Change file download technique to shutils
     Defaults should be GLOBALS, should be defined only once
@@ -14,6 +11,12 @@
     Ctrl-C exception handling to stop
     -d --directory To change the download directory
 
+
+    2018/03/05 01:47 am
+    x --repeat shouldn't be default
+    x Errors are removed from data
+    x Destroy the commands, go back to auto add boards or threads
+    x Bug when everything is pruned
 
     2018/02/05 04:28 pm
     x As bot input detect threads and boards?
