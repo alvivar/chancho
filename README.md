@@ -2,8 +2,8 @@
       ___&
     e'^_ )
       " "
-usage: chancho.py [-h] [-t THREADS [THREADS ...]] [-b BOARDS [BOARDS ...]]
-                  [-r REPEAT] [-p [PRUNE]]
+usage: chancho [-h] [-t THREADS [THREADS ...]] [-b BOARDS [BOARDS ...]]
+               [-r REPEAT] [-p PRUNE]
 
 4chan image downloader that keeps watching threads for new changes
 
@@ -15,8 +15,7 @@ optional arguments:
                         boards names to be scanned, the top thread from each
                         board will be added to the download list every cycle
   -r REPEAT, --repeat REPEAT
-                        seconds to wait before repeating the cycle again, 60
-                        seconds default
-  -p [PRUNE], --prune [PRUNE]
-                        archive old threads, 3600 seconds (1h) default
+                        seconds to wait between repeating the cycle
+  -p PRUNE, --prune PRUNE
+                        seconds old to archive threads
 ```
