@@ -254,20 +254,16 @@ if __name__ == "__main__":
             if image_count < 1:
                 DOWNLOAD_LIST[k]['error'] = True
 
+            # Remove errors
+            DOWNLOAD_LIST = {
+                k: v
+                for k, v in DOWNLOAD_LIST.items()
+                if not DOWNLOAD_LIST[k].get('error', False)
+            }
+
             # Save
             with open(THREAD_FILE, 'w') as f:
                 json.dump(DOWNLOAD_LIST, f)
-
-        # Remove errors
-        DOWNLOAD_LIST = {
-            k: v
-            for k, v in DOWNLOAD_LIST.items()
-            if not DOWNLOAD_LIST[k].get('error', False)
-        }
-
-        # Save
-        with open(THREAD_FILE, 'w') as f:
-            json.dump(DOWNLOAD_LIST, f)
 
         # --prune
         if ARGS.prune:
