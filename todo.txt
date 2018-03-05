@@ -2,6 +2,7 @@
         TO DO
 
 
+    chanlist need to be updated after every image
     Read json or default on error
     Change file download technique to shutils
     Defaults should be GLOBALS, should be defined only once

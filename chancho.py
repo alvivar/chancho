@@ -228,9 +228,9 @@ if __name__ == "__main__":
             if TOP_THREADS:
                 print(f"top thread found: {TOP_THREADS[0]}")
 
-        # Add the --threads, the input from the bot and the top threads from --boards
+        # Add the --threads (that includes the bot input) and the top threads
+        # from --boards
         for u in ARGS.threads + TOP_THREADS:
-            # TODO validate url
             DOWNLOAD_LIST[u] = DOWNLOAD_LIST.get(u, {})
 
         # Download everything, update statistics
@@ -299,9 +299,10 @@ if __name__ == "__main__":
             with open(THREAD_FILE, 'w') as f:
                 json.dump(DOWNLOAD_LIST, f)
 
-        # Nothing else to do
-        if len(DOWNLOAD_LIST) < 1:
-            print()
+        # Nothing else to do, and not repeating
+        if len(DOWNLOAD_LIST) < 1 and not ARGS.repeat:
+            if ARGS.threads:  # Or every thread was wrong
+                print()
             PARSER.print_usage()
             PARSER.exit()
 
