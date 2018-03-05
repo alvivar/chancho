@@ -2,7 +2,6 @@
         TO DO
 
 
-    chanlist need to be updated after every image
     Read json or default on error
     Change file download technique to shutils
     Defaults should be GLOBALS, should be defined only once
@@ -14,7 +13,8 @@
 
 
     2018/03/05 01:47 am
-    x Polish +1
+    x chanlist need to be updated after every image
+    x Polish +2
     x Readme revision
     x --repeat shouldn't be default
     x Errors are removed from data

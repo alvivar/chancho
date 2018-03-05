@@ -142,17 +142,15 @@ if __name__ == "__main__":
     PARSER.add_argument(
         "-r",
         "--repeat",
-        help=
-        "seconds to wait before repeating the cycle again, 60 seconds default",
-        default=0,
-        type=int)
+        help="seconds to wait between repeating the cycle",
+        type=int,
+        default=0)
     PARSER.add_argument(
         "-p",
         "--prune",
-        help="archive old threads, 3600 seconds (1h) default",
-        nargs="?",
+        help="seconds old to archive threads",
         type=int,
-        const=3600)
+        default=0)
     ARGS = PARSER.parse_args()
 
     # frozen / not frozen, cxfreeze compatibility
@@ -258,16 +256,20 @@ if __name__ == "__main__":
             if image_count < 1:
                 DOWNLOAD_LIST[k]['error'] = True
 
-            # Remove errors
-            DOWNLOAD_LIST = {
-                k: v
-                for k, v in DOWNLOAD_LIST.items()
-                if not DOWNLOAD_LIST[k].get('error', False)
-            }
-
             # Save
             with open(THREAD_FILE, 'w') as f:
                 json.dump(DOWNLOAD_LIST, f)
+
+        # Remove errors
+        DOWNLOAD_LIST = {
+            k: v
+            for k, v in DOWNLOAD_LIST.items()
+            if not DOWNLOAD_LIST[k].get('error', False)
+        }
+
+        # Save
+        with open(THREAD_FILE, 'w') as f:
+            json.dump(DOWNLOAD_LIST, f)
 
         # --prune
         if ARGS.prune:
@@ -301,7 +303,7 @@ if __name__ == "__main__":
 
         # Nothing else to do, and not repeating
         if len(DOWNLOAD_LIST) < 1 and not ARGS.repeat:
-            if ARGS.threads:  # Or every thread was wrong
+            if ARGS.threads:  # Or every input thread was wrong
                 print()
             PARSER.print_usage()
             PARSER.exit()
@@ -319,4 +321,8 @@ if __name__ == "__main__":
                 print()
 
         else:  # do while
+            if len(DOWNLOAD_LIST) > 0:
+                print()  # Everything downloaded, one run
+            PARSER.print_usage()
+            PARSER.exit()
             REPEAT = False
