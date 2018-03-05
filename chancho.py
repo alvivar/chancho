@@ -233,6 +233,10 @@ if __name__ == "__main__":
         for u in ARGS.threads + TOP_THREADS:
             DOWNLOAD_LIST[u] = DOWNLOAD_LIST.get(u, {})
 
+        # Save
+        with open(THREAD_FILE, 'w') as f:
+            json.dump(DOWNLOAD_LIST, f)
+
         # Download everything, update statistics
         for k, v in DOWNLOAD_LIST.items():
 
