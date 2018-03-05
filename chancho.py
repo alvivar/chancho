@@ -9,9 +9,9 @@ import os
 import sys
 import threading
 import time
+from urllib.error import HTTPError
 from urllib.parse import urlparse
 from urllib.request import urlopen
-from urllib.error import HTTPError
 
 import requests
 from lxml import html
@@ -129,14 +129,14 @@ if __name__ == "__main__":
     PARSER.add_argument(
         "-t",
         "--threads",
-        help="add threads urls to the download list",
+        help="threads urls to the download list",
         nargs="+",
         default=[])
     PARSER.add_argument(
         "-b",
         "--boards",
         help=
-        "add boards names to be watched, the top thread from each board will be added to the download list after every cycle",
+        "boards names to be scanned, the top thread from each board will be added to the download list every cycle",
         nargs="+",
         default=[])
     PARSER.add_argument(
