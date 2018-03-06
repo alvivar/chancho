@@ -12,6 +12,10 @@
     -d --directory To change the download directory
 
 
+    2018/03/05 08:19 pm
+    x When pruned, also remove input --threads
+    x Remove --threads with errors
+
     2018/03/05 01:47 am
     x chanlist need to be updated after every image
     x Polish +2

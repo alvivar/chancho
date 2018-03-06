@@ -215,7 +215,7 @@ if __name__ == "__main__":
             with open(THREAD_FILE) as f:
                 DOWNLOAD_LIST = json.load(f)
 
-        # --boards Top threads
+        # --boards top threads scan
         TOP_THREADS = []
         if (ARGS.boards):
             TOP_THREADS = [
@@ -237,7 +237,6 @@ if __name__ == "__main__":
 
         # Download everything, update statistics
         for k, v in DOWNLOAD_LIST.items():
-
             down_now, down_previously = download_4chan_thread(k, HOMEDIR)
             image_count = len(down_now) + len(down_previously)
             v['images'] = image_count
@@ -247,20 +246,22 @@ if __name__ == "__main__":
             else:
                 # Hack to avoid weird prune values when the field doesn't
                 # exist on already downloaded threads
-                v['found'] = v.get('found', time.time())
+                time_now = time.time()
+                v['found'] = v.get('found', time_now)
 
-                prune = time.time() - v['found']
+                prune = time_now - v['found']
                 v['prune'] = prune if prune > 0 else 0
 
-            # It's an error, prune it
+            # It's an error
             if image_count < 1:
                 DOWNLOAD_LIST[k]['error'] = True
+                ARGS.threads = [i for i in ARGS.threads if i != k]
 
             # Save
             with open(THREAD_FILE, 'w') as f:
                 json.dump(DOWNLOAD_LIST, f)
 
-        # Remove errors
+        # Remove marked errors
         DOWNLOAD_LIST = {
             k: v
             for k, v in DOWNLOAD_LIST.items()
@@ -280,11 +281,12 @@ if __name__ == "__main__":
                 with open(PRUNE_FILE) as f:
                     PRUNE_LIST = json.load(f)
 
-            # Clean up current, archive prune
+            # Clean up current, archive prune, clean --threads
             CLEAN_DOWNLOAD_LIST = {}
             for k, v in DOWNLOAD_LIST.items():
                 if v.get('prune', 0) >= ARGS.prune:
                     PRUNE_LIST[k] = v
+                    ARGS.threads = [i for i in ARGS.threads if i != k]
                 else:
                     CLEAN_DOWNLOAD_LIST[k] = v
             PRUNE_COUNT = len(DOWNLOAD_LIST) - len(CLEAN_DOWNLOAD_LIST)
@@ -303,13 +305,13 @@ if __name__ == "__main__":
 
         # Nothing else to do, and not repeating
         if len(DOWNLOAD_LIST) < 1 and not ARGS.repeat:
-            if ARGS.threads:  # Or every input thread was wrong
+            if ARGS.threads:  # Every --threads was wrong
                 print()
             PARSER.print_usage()
             PARSER.exit()
 
         # --repeat between complete downloads
-        if ARGS.repeat:
+        elif ARGS.repeat:
             print(f"\nwaiting {ARGS.repeat} seconds to retry...")
             print("paste threads, boards or 'q' + enter to quit:")
 
@@ -322,7 +324,7 @@ if __name__ == "__main__":
 
         else:  # do while
             if len(DOWNLOAD_LIST) > 0:
-                print()  # Everything downloaded, one run
+                print()  # Everything downloaded in one run
             PARSER.print_usage()
             PARSER.exit()
             REPEAT = False
