@@ -157,7 +157,7 @@ if __name__ == "__main__":
     PARSER.add_argument(
         "-w",
         "--wait",
-        help="seconds to rest between threads downloads",
+        help="seconds to rest between threads downloads (default 3s)",
         type=int,
         default=3)
     ARGS = PARSER.parse_args()
@@ -216,6 +216,7 @@ if __name__ == "__main__":
     THREAD.start()
 
     # Downloads
+    THREADS_COUNT = 0
     while REPEAT:
 
         # Read the queue
@@ -240,6 +241,7 @@ if __name__ == "__main__":
         for u in ARGS.threads + TOP_THREADS:
             DOWNLOAD_LIST[u] = DOWNLOAD_LIST.get(u, {})
         ARGS.threads = []
+        THREADS_COUNT = len(DOWNLOAD_LIST)
 
         # Save
         with open(THREAD_FILE, 'w') as f:
@@ -314,7 +316,8 @@ if __name__ == "__main__":
 
         # Nothing else to do
         if len(DOWNLOAD_LIST) < 1:
-            print()
+            if THREADS_COUNT > 0:
+                print()
             PARSER.print_usage()
             PARSER.exit()
 
