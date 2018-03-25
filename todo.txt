@@ -4,6 +4,7 @@
 
     Change file download technique to shutils
     Defaults should be GLOBALS, should be defined only once
+    Thread download rest visual feedback
     Should exit the app exactly when 'q'?
 
     Ctrl-C exception handling to stop
@@ -11,6 +12,7 @@
 
 
     2018/03/24 10:10 pm
+    x Don't print() the first time, without threads, before shutting down
     x Rest between threads download
     x Read json or default on error
     x Stop when all downloads are done
