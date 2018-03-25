@@ -9,6 +9,7 @@ import os
 import sys
 import threading
 import time
+from random import uniform
 from urllib.error import HTTPError
 from urllib.parse import urlparse
 from urllib.request import urlopen
@@ -16,16 +17,18 @@ from urllib.request import urlopen
 import requests
 from lxml import html
 
-import cutetime
 
-
-def download_4chan_thread(threadurl, path):
+def download_4chan_thread(threadurl, path, *, download_dir="downloads",
+                          rest=3):
     """
         Downloads all images from a thread. Return a tuple with 2 lists, one of
         downloaded urls, the other of previously downloaded.
     """
+    half = rest / 2
+    time.sleep(uniform(rest - half, rest + half))
+
     thread_name = threadurl.split("/")[-1]
-    download_dir = os.path.join(path, "downloads", thread_name)
+    download_dir = os.path.join(path, download_dir, thread_name)
 
     images = get_4chan_images(threadurl)
     now, previously = download_urls(images, download_dir)
@@ -82,11 +85,11 @@ def download_urls(urls, download_dir=""):
     if download_dir and not os.path.exists(download_dir):
         os.makedirs(download_dir)
 
-    downloaded_before = []
     before_file = os.path.join(download_dir, "done.json")
-    if os.path.isfile(before_file):
-        with open(before_file) as f:
-            downloaded_before = json.load(f)
+    try:
+        downloaded_before = json.load(open(before_file, 'r'))
+    except (IOError, ValueError):
+        downloaded_before = []
 
     # Ignore downloaded before
     urls = [i for i in urls if i not in downloaded_before]
@@ -142,7 +145,7 @@ if __name__ == "__main__":
     PARSER.add_argument(
         "-r",
         "--repeat",
-        help="seconds to wait between repeating the cycle",
+        help="seconds to wait between repeating the complete cycle",
         type=int,
         default=0)
     PARSER.add_argument(
@@ -151,6 +154,12 @@ if __name__ == "__main__":
         help="seconds old to archive threads",
         type=int,
         default=0)
+    PARSER.add_argument(
+        "-w",
+        "--wait",
+        help="seconds to rest between threads downloads",
+        type=int,
+        default=3)
     ARGS = PARSER.parse_args()
 
     # frozen / not frozen, cxfreeze compatibility
@@ -210,10 +219,10 @@ if __name__ == "__main__":
     while REPEAT:
 
         # Read the queue
-        DOWNLOAD_LIST = {}
-        if os.path.isfile(THREAD_FILE):
-            with open(THREAD_FILE) as f:
-                DOWNLOAD_LIST = json.load(f)
+        try:
+            DOWNLOAD_LIST = json.load(open(THREAD_FILE, 'r'))
+        except (IOError, ValueError):
+            DOWNLOAD_LIST = {}
 
         # --boards top threads scan
         TOP_THREADS = []
@@ -230,6 +239,7 @@ if __name__ == "__main__":
         # from --boards
         for u in ARGS.threads + TOP_THREADS:
             DOWNLOAD_LIST[u] = DOWNLOAD_LIST.get(u, {})
+        ARGS.threads = []
 
         # Save
         with open(THREAD_FILE, 'w') as f:
@@ -237,7 +247,8 @@ if __name__ == "__main__":
 
         # Download everything, update statistics
         for k, v in DOWNLOAD_LIST.items():
-            down_now, down_previously = download_4chan_thread(k, HOMEDIR)
+            down_now, down_previously = download_4chan_thread(
+                k, HOMEDIR, rest=ARGS.wait)
             image_count = len(down_now) + len(down_previously)
             v['images'] = image_count
             if down_now:
@@ -255,7 +266,6 @@ if __name__ == "__main__":
             # It's an error
             if image_count < 1:
                 DOWNLOAD_LIST[k]['error'] = True
-                ARGS.threads = [i for i in ARGS.threads if i != k]
 
             # Save
             with open(THREAD_FILE, 'w') as f:
@@ -276,17 +286,16 @@ if __name__ == "__main__":
         if ARGS.prune:
 
             # Read archive
-            PRUNE_LIST = {}
-            if os.path.isfile(PRUNE_FILE):
-                with open(PRUNE_FILE) as f:
-                    PRUNE_LIST = json.load(f)
+            try:
+                PRUNE_LIST = json.load(open(PRUNE_FILE, 'r'))
+            except (IOError, ValueError):
+                PRUNE_LIST = {}
 
             # Clean up current, archive prune, clean --threads
             CLEAN_DOWNLOAD_LIST = {}
             for k, v in DOWNLOAD_LIST.items():
                 if v.get('prune', 0) >= ARGS.prune:
                     PRUNE_LIST[k] = v
-                    ARGS.threads = [i for i in ARGS.threads if i != k]
                 else:
                     CLEAN_DOWNLOAD_LIST[k] = v
             PRUNE_COUNT = len(DOWNLOAD_LIST) - len(CLEAN_DOWNLOAD_LIST)
@@ -303,10 +312,9 @@ if __name__ == "__main__":
             with open(THREAD_FILE, 'w') as f:
                 json.dump(DOWNLOAD_LIST, f)
 
-        # Nothing else to do, and not repeating
-        if len(DOWNLOAD_LIST) < 1 and not ARGS.repeat:
-            if ARGS.threads:  # Every --threads was wrong
-                print()
+        # Nothing else to do
+        if len(DOWNLOAD_LIST) < 1:
+            print()
             PARSER.print_usage()
             PARSER.exit()
 

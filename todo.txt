@@ -2,17 +2,18 @@
         TO DO
 
 
-    Stop when all downloads are done
-
-    Read json or default on error
     Change file download technique to shutils
     Defaults should be GLOBALS, should be defined only once
     Should exit the app exactly when 'q'?
-    Rest between request?
 
     Ctrl-C exception handling to stop
     -d --directory To change the download directory
 
+
+    2018/03/24 10:10 pm
+    x Rest between threads download
+    x Read json or default on error
+    x Stop when all downloads are done
 
     2018/03/05 08:19 pm
     x When pruned, also remove input --threads
