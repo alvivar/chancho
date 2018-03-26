@@ -24,6 +24,7 @@ def download_4chan_thread(threadurl, path, *, download_dir="downloads",
         Downloads all images from a thread. Return a tuple with 2 lists, one of
         downloaded urls, the other of previously downloaded.
     """
+    rest = 1 if rest < 1 else rest
     half = rest / 2
     time.sleep(uniform(rest - half, rest + half))
 
