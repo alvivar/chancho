@@ -173,6 +173,7 @@ if __name__ == "__main__":
 
     # Repeat cycle and input detection
     REPEAT = True
+    BOT_INPUT = False
 
     def botmode():
         """
@@ -204,12 +205,16 @@ if __name__ == "__main__":
                     board = ''.join(letter for letter in word)
                     if len(board) < 5:
                         boards.append(board)
-                ARGS.boards += boards
+
+                ARGS.boards = list(set(ARGS.boards + boards))
 
                 if threads:
                     print(f"new threads: {', '.join(threads)}")
                 if boards:
                     print(f"new boards for top scan: {', '.join(boards)}")
+                if threads or boards:
+                    global BOT_INPUT
+                    BOT_INPUT = True
 
     THREAD = threading.Thread(target=botmode)
     THREAD.daemon = True
@@ -234,7 +239,7 @@ if __name__ == "__main__":
             ]
 
             if TOP_THREADS:
-                print(f"top thread found: {TOP_THREADS[0]}")
+                print(f"top threads found: {', '.join(TOP_THREADS)}")
 
         # Add the --threads (that includes the bot input) and the top threads
         # from --boards
@@ -333,9 +338,11 @@ if __name__ == "__main__":
             if REPEAT:
                 print()
 
-        else:  # do while
+        # do while
+        elif not BOT_INPUT:  # Repeat silently, something was added via the thread input
             if len(DOWNLOAD_LIST) > 0:
                 print()  # Everything downloaded in one run
             PARSER.print_usage()
             PARSER.exit()
             REPEAT = False
+        BOT_INPUT = False

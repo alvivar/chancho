@@ -10,6 +10,8 @@
     Ctrl-C exception handling to stop
     -d --directory To change the download directory
 
+    2018/03/25 09:19 pmy
+    x Threads and boards via input are downloaded in the same run
 
     2018/03/24 10:10 pm
     x Don't print() the first time, without threads, before shutting down
