@@ -2,6 +2,7 @@
         TO DO
 
 
+    Wait some time and retry on network exceptions
     Change file download technique to shutils
     Defaults should be GLOBALS, should be defined only once
     Thread download rest visual feedback
