@@ -15,7 +15,6 @@ from urllib.parse import urlparse
 from urllib.request import urlopen
 
 import requests
-
 from lxml import html
 
 
