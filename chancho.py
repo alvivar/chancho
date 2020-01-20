@@ -18,8 +18,7 @@ import requests
 from lxml import html
 
 
-def download_4chan_thread(threadurl, path, *, download_dir="downloads",
-                          rest=3):
+def download_4chan_thread(threadurl, path, *, download_dir="downloads", rest=3):
     """
         Downloads all images from a thread. Return a tuple with 2 lists, one of
         downloaded urls, the other of previously downloaded.
@@ -58,7 +57,7 @@ def get_4chan_images(threadurl):
     return ["http://" + i[2:] for i in pics]
 
 
-def get_threads_from_board(board, baseurl='http://boards.4chan.org'):
+def get_threads_from_board(board, baseurl="http://boards.4chan.org"):
     """
         Return a list with all the threads urls from a board, ignoring sticky
         posts.
@@ -88,7 +87,7 @@ def download_urls(urls, download_dir=""):
 
     before_file = os.path.join(download_dir, "done.json")
     try:
-        downloaded_before = json.load(open(before_file, 'r'))
+        downloaded_before = json.load(open(before_file, "r"))
     except (IOError, ValueError):
         downloaded_before = []
 
@@ -103,13 +102,13 @@ def download_urls(urls, download_dir=""):
         print(f"downloading {i+1}/{len(urls)} {url}")
 
         try:
-            with urlopen(url) as r, open(filename, 'wb') as f:
+            with urlopen(url) as r, open(filename, "wb") as f:
                 data = r.read()
                 f.write(data)
             downloaded.append(url)
 
             # Save
-            with open(before_file, 'w') as f:
+            with open(before_file, "w") as f:
                 json.dump(downloaded + downloaded_before, f)
 
         except HTTPError:
@@ -128,45 +127,45 @@ if __name__ == "__main__":
 
     # Command line
     PARSER = argparse.ArgumentParser(
-        description=
-        "4chan image downloader that keeps watching threads for new changes")
+        description="4chan image downloader that keeps watching threads for new changes"
+    )
     PARSER.add_argument(
         "-t",
         "--threads",
         help="threads urls to the download list",
         nargs="+",
-        default=[])
+        default=[],
+    )
     PARSER.add_argument(
         "-b",
         "--boards",
-        help=
-        "boards names to be scanned, the top thread from each board will be added to the download list every cycle",
+        help="boards names to be scanned, the top thread from each board will be added to the download list every cycle",
         nargs="+",
-        default=[])
+        default=[],
+    )
     PARSER.add_argument(
         "-r",
         "--repeat",
         help="seconds to wait between repeating the complete cycle",
         type=int,
-        default=0)
+        default=0,
+    )
     PARSER.add_argument(
-        "-p",
-        "--prune",
-        help="seconds old to archive threads",
-        type=int,
-        default=0)
+        "-p", "--prune", help="seconds old to archive threads", type=int, default=0
+    )
     PARSER.add_argument(
         "-w",
         "--wait",
         help="seconds to rest between threads downloads (default 3s)",
         type=int,
-        default=3)
+        default=3,
+    )
     ARGS = PARSER.parse_args()
 
     # frozen / not frozen, cxfreeze compatibility
     HOMEDIR = os.path.normpath(
-        os.path.dirname(
-            sys.executable if getattr(sys, 'frozen', False) else __file__))
+        os.path.dirname(sys.executable if getattr(sys, "frozen", False) else __file__)
+    )
 
     # Files
     THREAD_FILE = os.path.join(HOMEDIR, "chanlist.json")
@@ -189,7 +188,7 @@ if __name__ == "__main__":
                 return
 
             # Quit
-            if commands[0] in ['q']:
+            if commands[0] in ["q"]:
                 print(CHANCHO + " bye!")
                 time.sleep(1)
 
@@ -203,7 +202,7 @@ if __name__ == "__main__":
 
                 boards = []
                 for word in commands:
-                    board = ''.join(letter for letter in word)
+                    board = "".join(letter for letter in word)
                     if len(board) < 5:
                         boards.append(board)
 
@@ -227,15 +226,16 @@ if __name__ == "__main__":
 
         # Read the queue
         try:
-            DOWNLOAD_LIST = json.load(open(THREAD_FILE, 'r'))
+            DOWNLOAD_LIST = json.load(open(THREAD_FILE, "r"))
         except (IOError, ValueError):
             DOWNLOAD_LIST = {}
 
         # --boards top threads scan
         TOP_THREADS = []
-        if (ARGS.boards):
+        if ARGS.boards:
             TOP_THREADS = [
-                thread for board in ARGS.boards
+                thread
+                for board in ARGS.boards
                 for thread in get_threads_from_board(board)[:1]
             ]
 
@@ -249,45 +249,56 @@ if __name__ == "__main__":
         ARGS.threads = []
         THREADS_COUNT = len(DOWNLOAD_LIST)
 
+        # Sort by prune time
+        DOWNLOAD_LIST = {
+            k: v
+            for k, v in sorted(
+                DOWNLOAD_LIST.items(),
+                key=lambda item: item[1].get("prune", 0),
+                reverse=True,
+            )
+        }
+
         # Save
-        with open(THREAD_FILE, 'w') as f:
+        with open(THREAD_FILE, "w") as f:
             json.dump(DOWNLOAD_LIST, f)
 
         # Download everything, update statistics
         for k, v in DOWNLOAD_LIST.items():
             down_now, down_previously = download_4chan_thread(
-                k, HOMEDIR, rest=ARGS.wait)
+                k, HOMEDIR, rest=ARGS.wait
+            )
             image_count = len(down_now) + len(down_previously)
-            v['images'] = image_count
+            v["images"] = image_count
             if down_now:
-                v['found'] = time.time()
-                v['prune'] = 0
+                v["found"] = time.time()
+                v["prune"] = 0
             else:
                 # Hack to avoid weird prune values when the field doesn't
                 # exist on already downloaded threads
                 time_now = time.time()
-                v['found'] = v.get('found', time_now)
+                v["found"] = v.get("found", time_now)
 
-                prune = time_now - v['found']
-                v['prune'] = prune if prune > 0 else 0
+                prune = time_now - v["found"]
+                v["prune"] = prune if prune > 0 else 0
 
             # It's an error
             if image_count < 1:
-                DOWNLOAD_LIST[k]['error'] = True
+                DOWNLOAD_LIST[k]["error"] = True
 
             # Save
-            with open(THREAD_FILE, 'w') as f:
+            with open(THREAD_FILE, "w") as f:
                 json.dump(DOWNLOAD_LIST, f)
 
         # Remove marked errors
         DOWNLOAD_LIST = {
             k: v
             for k, v in DOWNLOAD_LIST.items()
-            if not DOWNLOAD_LIST[k].get('error', False)
+            if not DOWNLOAD_LIST[k].get("error", False)
         }
 
         # Save
-        with open(THREAD_FILE, 'w') as f:
+        with open(THREAD_FILE, "w") as f:
             json.dump(DOWNLOAD_LIST, f)
 
         # --prune
@@ -295,14 +306,14 @@ if __name__ == "__main__":
 
             # Read archive
             try:
-                PRUNE_LIST = json.load(open(PRUNE_FILE, 'r'))
+                PRUNE_LIST = json.load(open(PRUNE_FILE, "r"))
             except (IOError, ValueError):
                 PRUNE_LIST = {}
 
             # Clean up current, archive prune, clean --threads
             CLEAN_DOWNLOAD_LIST = {}
             for k, v in DOWNLOAD_LIST.items():
-                if v.get('prune', 0) >= ARGS.prune:
+                if v.get("prune", 0) >= ARGS.prune:
                     PRUNE_LIST[k] = v
                 else:
                     CLEAN_DOWNLOAD_LIST[k] = v
@@ -310,14 +321,16 @@ if __name__ == "__main__":
             DOWNLOAD_LIST = CLEAN_DOWNLOAD_LIST
 
             if PRUNE_COUNT > 0:
-                print(f"{PRUNE_COUNT} thread{'s' if PRUNE_COUNT > 1 else ''} "
-                      f"pruned ({ARGS.prune}s old)")
+                print(
+                    f"{PRUNE_COUNT} thread{'s' if PRUNE_COUNT > 1 else ''} "
+                    f"pruned ({ARGS.prune}s old)"
+                )
 
             # Save
-            with open(PRUNE_FILE, 'w') as f:
+            with open(PRUNE_FILE, "w") as f:
                 json.dump(PRUNE_LIST, f)
 
-            with open(THREAD_FILE, 'w') as f:
+            with open(THREAD_FILE, "w") as f:
                 json.dump(DOWNLOAD_LIST, f)
 
         # Nothing else to do
