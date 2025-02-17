@@ -1,3 +1,16 @@
+# Chancho
+
+A 4chan image downloader that watches threads for new changes and downloads images automatically.
+
+## Features
+
+-   Download images from multiple 4chan threads simultaneously
+-   Monitor boards and automatically download from new threads
+-   Configurable refresh intervals and thread pruning
+-   Lightweight and easy to use
+
+## Usage
+
 ```
       ___&
     e'^_ )
@@ -7,7 +20,7 @@ usage: chancho.py [-h] [-t THREADS [THREADS ...]] [-b BOARDS [BOARDS ...]]
 
 4chan image downloader that keeps watching threads for new changes
 
-optional arguments:
+options:
   -h, --help            show this help message and exit
   -t THREADS [THREADS ...], --threads THREADS [THREADS ...]
                         threads urls to the download list
@@ -18,5 +31,6 @@ optional arguments:
                         seconds to wait between repeating the complete cycle
   -p PRUNE, --prune PRUNE
                         seconds old to archive threads
-  -w WAIT, --wait WAIT  seconds to rest between threads downloads (default 3s)
+  -w WAIT, --wait WAIT  seconds to rest between threads and image downloads
+                        (default 3s)
 ```
