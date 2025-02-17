@@ -100,16 +100,16 @@ def download_urls(urls, download_dir="", rest=3):
         filename = os.path.join(download_dir, name)
         print(f"downloading {i + 1}/{len(urls)} {url}")
 
+        # Sleep between downloads
+        if i < len(urls) - 1:  # Don't sleep after last download
+            half = rest / 2
+            time.sleep(uniform(rest - half, rest + half))
+
         try:
             with urlopen(url) as r, open(filename, "wb") as f:
                 data = r.read()
                 f.write(data)
             downloaded.append(url)
-
-            # Sleep between downloads
-            if i < len(urls) - 1:  # Don't sleep after last download
-                half = rest / 2
-                time.sleep(uniform(rest - half, rest + half))
 
             # Save
             with open(before_file, "w") as f:
