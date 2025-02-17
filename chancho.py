@@ -1,6 +1,6 @@
 """
-    CHANCHO is a 4chan image downloader
-    that keeps watching threads for new changes
+CHANCHO is a 4chan image downloader
+that keeps watching threads for new changes
 """
 
 import argparse
@@ -20,8 +20,8 @@ from lxml import html
 
 def download_4chan_thread(threadurl, path, *, download_dir="downloads", rest=3):
     """
-        Downloads all images from a thread. Return a tuple with 2 lists, one of
-        downloaded urls, the other of previously downloaded.
+    Downloads all images from a thread. Return a tuple with 2 lists, one of
+    downloaded urls, the other of previously downloaded.
     """
     rest = 1 if rest < 1 else rest
     half = rest / 2
@@ -43,7 +43,7 @@ def download_4chan_thread(threadurl, path, *, download_dir="downloads", rest=3):
 
 def get_4chan_images(threadurl):
     """
-        Return a list with all the images urls from a thread.
+    Return a list with all the images urls from a thread.
     """
 
     try:
@@ -59,8 +59,7 @@ def get_4chan_images(threadurl):
 
 def get_threads_from_board(board, baseurl="http://boards.4chan.org"):
     """
-        Return a list with all the threads urls from a board, ignoring sticky
-        posts.
+    Return a list with all the threads urls from a board, ignoring sticky posts.
     """
     board_url = f"{baseurl}/{board}"
     page = requests.get(board_url)
@@ -73,8 +72,8 @@ def get_threads_from_board(board, baseurl="http://boards.4chan.org"):
 
 def download_urls(urls, download_dir=""):
     """
-        Downloads files from a list of urls. Return a tuple with 2 lists, one
-        of downloaded urls, the other of previously downloaded.
+    Downloads files from a list of urls. Return a tuple with 2 lists, one of
+    downloaded urls, the other of previously downloaded.
     """
 
     # It needs to be something
@@ -99,7 +98,7 @@ def download_urls(urls, download_dir=""):
     for i, url in enumerate(urls):
         name = url.split("/")[-1]
         filename = os.path.join(download_dir, name)
-        print(f"downloading {i+1}/{len(urls)} {url}")
+        print(f"downloading {i + 1}/{len(urls)} {url}")
 
         try:
             with urlopen(url) as r, open(filename, "wb") as f:
@@ -118,7 +117,6 @@ def download_urls(urls, download_dir=""):
 
 
 if __name__ == "__main__":
-
     CHANCHO = """
       ___&
     e'^_ )
@@ -177,7 +175,7 @@ if __name__ == "__main__":
 
     def botmode():
         """
-            Handles the user input.
+        Handles the user input.
         """
         while True:
             text = input()
@@ -223,7 +221,6 @@ if __name__ == "__main__":
     # Downloads
     THREADS_COUNT = 0
     while REPEAT:
-
         # Read the queue
         try:
             DOWNLOAD_LIST = json.load(open(THREAD_FILE, "r"))
@@ -303,7 +300,6 @@ if __name__ == "__main__":
 
         # --prune
         if ARGS.prune:
-
             # Read archive
             try:
                 PRUNE_LIST = json.load(open(PRUNE_FILE, "r"))
