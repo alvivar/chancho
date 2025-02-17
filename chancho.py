@@ -105,18 +105,26 @@ def download_urls(urls, download_dir="", rest=3):
             half = rest / 2
             time.sleep(uniform(rest - half, rest + half))
 
-        try:
-            with urlopen(url) as r, open(filename, "wb") as f:
-                data = r.read()
-                f.write(data)
-            downloaded.append(url)
+        retry_count = 0
+        while retry_count < 3:  # Try up to 3 times
+            try:
+                with urlopen(url) as r, open(filename, "wb") as f:
+                    data = r.read()
+                    f.write(data)
+                downloaded.append(url)
 
-            # Save
-            with open(before_file, "w") as f:
-                json.dump(downloaded + downloaded_before, f)
+                # Save
+                with open(before_file, "w") as f:
+                    json.dump(downloaded + downloaded_before, f)
+                break  # Success - exit retry loop
 
-        except HTTPError:
-            print(f"error downloading {url}")
+            except HTTPError:
+                retry_count += 1
+                if retry_count < 3:
+                    print(f"error downloading {url}, retrying in {rest * 2} seconds...")
+                    time.sleep(rest * 2)  # Wait double time before retry
+                else:
+                    print(f"failed to download {url} after 3 attempts")
 
     return downloaded, downloaded_before
 
