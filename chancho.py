@@ -31,7 +31,7 @@ def download_4chan_thread(threadurl, path, *, download_dir="downloads", rest=3):
     download_dir = os.path.join(path, download_dir, thread_name)
 
     images = get_4chan_images(threadurl)
-    now, previously = download_urls(images, download_dir)
+    now, previously = download_urls(images, download_dir, rest=rest)
 
     if now or previously:
         print(f"thread {thread_name} complete!")
@@ -70,7 +70,7 @@ def get_threads_from_board(board, baseurl="http://boards.4chan.org"):
     return [f"{baseurl}/{board}/thread/{t[1:]}" for t in threads]
 
 
-def download_urls(urls, download_dir=""):
+def download_urls(urls, download_dir="", rest=3):
     """
     Downloads files from a list of urls. Return a tuple with 2 lists, one of
     downloaded urls, the other of previously downloaded.
@@ -105,6 +105,11 @@ def download_urls(urls, download_dir=""):
                 data = r.read()
                 f.write(data)
             downloaded.append(url)
+
+            # Sleep between downloads
+            if i < len(urls) - 1:  # Don't sleep after last download
+                half = rest / 2
+                time.sleep(uniform(rest - half, rest + half))
 
             # Save
             with open(before_file, "w") as f:
@@ -154,7 +159,7 @@ if __name__ == "__main__":
     PARSER.add_argument(
         "-w",
         "--wait",
-        help="seconds to rest between threads downloads (default 3s)",
+        help="seconds to rest between threads and image downloads (default 3s)",
         type=int,
         default=3,
     )
@@ -354,5 +359,5 @@ if __name__ == "__main__":
                 print()  # Everything downloaded in one run
             PARSER.print_usage()
             PARSER.exit()
-            REPEAT = False
+
         BOT_INPUT = False
