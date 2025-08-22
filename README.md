@@ -1,13 +1,19 @@
-## Installing Playwright with Pytest
+# chancho
 
-1. **Install the Pytest plugin:**
+```
+      ___&
+    e'^_ )
+      " "
+chancho <thread_url> [thread_url2]
+chancho --list-threads
+```
 
-    ```bash
-    pip install pytest-playwright
-    ```
+Chancho is a 4chan thread downloader. It creates a `chandb.json` file as a registry for tracking files.
 
-2. **Install the required browsers:**
+## Setup
 
-    ```bash
-    playwright install
-    ```
+Install dependencies using `requirements.txt`, then install [Playwright](https://playwright.dev/python/docs/intro):
+
+```bash
+playwright install
+```
