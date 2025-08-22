@@ -47,9 +47,9 @@ def get_db():
 def update_db(db, url_title_links: list[tuple[str, str, list[str]]]):
     current_time = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
-    for thread_url, title, links in url_title_links:
-        if thread_url in db:
-            entry = db[thread_url]
+    for url, title, links in url_title_links:
+        if url in db:
+            entry = db[url]
 
             existing_links = {
                 link["href"]
@@ -67,7 +67,7 @@ def update_db(db, url_title_links: list[tuple[str, str, list[str]]]):
                 entry["updated"] = current_time
                 entry["links"]["pending"].extend(new_links)
         else:
-            db[thread_url] = {
+            db[url] = {
                 "title": title,
                 "found": current_time,
                 "updated": current_time,
@@ -87,6 +87,12 @@ def save_db(db):
         json.dump(db, f, indent=4, ensure_ascii=False)
 
 
+def print_instructions():
+    print("chancho <thread_url> [thread_url2] ...")
+    print("chancho --list-threads")
+    print("chancho --list-info")
+
+
 if __name__ == "__main__":
     CHANCHO = """
       ___&
@@ -94,55 +100,49 @@ if __name__ == "__main__":
       " " """
     print(CHANCHO)
 
-    # Scan
-
     db = get_db()
-
-    def print_instructions():
-        print("chancho <thread_url> [thread_url2] ...")
-        print("chancho --list-threads")
-        print("chancho --list-info")
 
     if len(sys.argv) < 2:
         print_instructions()
         print()
         sys.exit(1)
 
-    if sys.argv[1] == "--list-threads":
+    # Commands
+
+    commands = " ".join(sys.argv[1:])
+    command_used = False
+
+    if "--list-threads" in commands and "--list-info" not in commands:
+        command_used = True
         for url in db:
             print(url)
         print()
-        sys.exit(0)
 
-    if sys.argv[1] == "--list-info":
-        for url in db:
-            entry = db[url]
+    if "--list-info" in commands:
+        command_used = True
+        for url, entry in db.items():
             print(url)
             print(entry["title"])
-            pending = len(entry["links"]["pending"])
-            downloaded = len(entry["links"]["downloaded"])
-            failed = len(entry["links"]["failed"])
-            total = pending + downloaded + failed
+            links = entry["links"]
+            pending = len(links["pending"])
+            downloaded = len(links["downloaded"])
+            failed = len(links["failed"])
             print(f"{downloaded} downloaded, {pending + failed} pending")
             print()
-        sys.exit(0)
 
-    if sys.argv[1] == "--total":
-        total_threads = 0
+    if "--total" in commands:
+        command_used = True
+
+        total_threads = len(db)
         total_pending = 0
         total_downloaded = 0
         total_failed = 0
 
-        for url in db:
-            entry = db[url]
-            pending = len(entry["links"]["pending"])
-            downloaded = len(entry["links"]["downloaded"])
-            failed = len(entry["links"]["failed"])
-
-            total_threads += 1
-            total_pending += pending
-            total_downloaded += downloaded
-            total_failed += failed
+        for entry in db.values():
+            links = entry["links"]
+            total_pending += len(links["pending"])
+            total_downloaded += len(links["downloaded"])
+            total_failed += len(links["failed"])
 
         print(f"Total threads: {total_threads}")
         print(f"Total downloaded: {total_downloaded}")
@@ -150,7 +150,10 @@ if __name__ == "__main__":
         print(f"Total failed: {total_failed}")
         print()
 
+    if command_used:
         sys.exit(0)
+
+    # Scan
 
     thread_urls = sys.argv[1:]
     thread_urls = sorted(list(set(thread_urls)))
