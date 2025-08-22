@@ -37,6 +37,11 @@ def get_links(thread_urls: list[str]) -> list[tuple[str, str, list[str]]]:
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
+        CHANCHO = """
+          ___&
+        e'^_ )
+          " " """
+        print(CHANCHO)
         print("Usage: python chancho.py <thread_url> [thread_url2] ...")
         sys.exit(1)
 
