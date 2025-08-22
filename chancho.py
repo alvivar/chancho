@@ -8,7 +8,7 @@ DB_FILE = "chandb.json"
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
 
-def get_links(urls: list[str]) -> list[tuple[str, str, list[str]]]:
+def get_links(urls):
     results = []
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
@@ -44,7 +44,7 @@ def get_db():
     return db
 
 
-def update_db(db, url_title_links: list[tuple[str, str, list[str]]]):
+def update_db(db, url_title_links):
     current_time = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
     for url, title, links in url_title_links:
