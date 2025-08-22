@@ -164,7 +164,7 @@ if __name__ == "__main__":
         print_instructions()
         print()
         print("Whoa, something went wrong.")
-        print("Check your thread URLs and arguments.")
+        print("Check your thread URLs and arguments for errors.")
         print()
         print("\n".join(thread_urls))
         print()
