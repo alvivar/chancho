@@ -1,6 +1,4 @@
-# Installing Playwright with Pytest
-
-## Installation Steps
+## Installing Playwright with Pytest
 
 1. **Install the Pytest plugin:**
 
