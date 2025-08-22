@@ -101,6 +101,7 @@ if __name__ == "__main__":
     def print_instructions():
         print("chancho <thread_url> [thread_url2] ...")
         print("chancho --list-threads")
+        print("chancho --list-info")
 
     if len(sys.argv) < 2:
         print_instructions()
@@ -111,6 +112,19 @@ if __name__ == "__main__":
         for url in db:
             print(url)
         print()
+        sys.exit(0)
+
+    if sys.argv[1] == "--list-info":
+        for url in db:
+            entry = db[url]
+            print(url)
+            print(entry["title"])
+            pending = len(entry["links"]["pending"])
+            downloaded = len(entry["links"]["downloaded"])
+            failed = len(entry["links"]["failed"])
+            total = pending + downloaded + failed
+            print(f"{downloaded} downloaded, {pending + failed} pending")
+            print()
         sys.exit(0)
 
     thread_urls = sys.argv[1:]
@@ -138,8 +152,5 @@ if __name__ == "__main__":
     for url, title, links in results:
         print(url)
         print(title)
-
-        print()
-        for link in links:
-            print(link)
+        print(f"{len(links)} files")
         print()
