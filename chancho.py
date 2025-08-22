@@ -8,17 +8,17 @@ USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTM
 DOWNLOAD_FILE = "chanlist.json"
 
 
-def get_links(thread_urls: list[str]) -> list[tuple[str, str, list[str]]]:
+def get_links(urls: list[str]) -> list[tuple[str, str, list[str]]]:
     results = []
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(user_agent=USER_AGENT)
 
-        for thread_url in thread_urls:
+        for thread_url in urls:
             page = context.new_page()
             page.goto(thread_url)
 
-            hrefs = page.evaluate("""
+            links = page.evaluate("""
                 () => {
                     const links = Array.from(document.querySelectorAll('a[href*="4cdn"]'));
                     return [...new Set(links.map(link => link.href))].sort();
@@ -28,35 +28,26 @@ def get_links(thread_urls: list[str]) -> list[tuple[str, str, list[str]]]:
             title = page.title()
             page.close()
 
-            results.append((thread_url, title, hrefs))
+            results.append((thread_url, title, links))
 
         browser.close()
 
         return results
 
 
-if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        CHANCHO = """
-          ___&
-        e'^_ )
-          " " """
-        print(CHANCHO)
-        print("Usage: python chancho.py <thread_url> [thread_url2] ...")
-        sys.exit(1)
-
+def get_db():
     try:
         with open(DOWNLOAD_FILE, "r", encoding="utf-8") as f:
             db = json.load(f)
-    except FileNotFoundError:
+    except Exception:
         db = {}
+    return db
 
-    thread_urls = sys.argv[1:]
-    results = get_links(thread_urls)
 
+def update_db(db, url_title_links: list[tuple[str, str, list[str]]]):
     current_time = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
 
-    for thread_url, title, links in results:
+    for thread_url, title, links in url_title_links:
         if thread_url in db:
             entry = db[thread_url]
             entry["title"] = title
@@ -91,12 +82,40 @@ if __name__ == "__main__":
                 },
             }
 
+
+def save_db(db):
     with open(DOWNLOAD_FILE, "w", encoding="utf-8") as f:
         json.dump(db, f, indent=4, ensure_ascii=False)
 
-    for thread_url, title, links in results:
+
+if __name__ == "__main__":
+    CHANCHO = """
+      ___&
+    e'^_ )
+      " " """
+    print(CHANCHO)
+
+    if len(sys.argv) < 2:
+        print("chancho <thread_url> [thread_url2] ...")
+        sys.exit(1)
+
+    # Analyze
+
+    thread_urls = sys.argv[1:]
+    results = get_links(thread_urls)
+
+    # Store
+
+    db = get_db()
+    update_db(db, results)
+    save_db(db)
+
+    # Print
+
+    for url, title, links in results:
+        print(url)
         print(title)
-        print(thread_url)
+
         print()
         for link in links:
             print(link)
