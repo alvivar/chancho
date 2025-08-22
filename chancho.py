@@ -98,9 +98,12 @@ if __name__ == "__main__":
 
     db = get_db()
 
-    if len(sys.argv) < 2:
+    def print_instructions():
         print("chancho <thread_url> [thread_url2] ...")
         print("chancho --list-threads")
+
+    if len(sys.argv) < 2:
+        print_instructions()
         sys.exit(1)
 
     if sys.argv[1] == "--list-threads":
@@ -111,7 +114,17 @@ if __name__ == "__main__":
 
     thread_urls = sys.argv[1:]
     thread_urls = sorted(list(set(thread_urls)))
-    results = get_links(thread_urls)
+
+    try:
+        results = get_links(thread_urls)
+    except Exception:
+        print_instructions()
+        print()
+        print("Whoa, something went wrong. Check your thread URLs and arguments.")
+        print()
+        print("\n".join(thread_urls))
+        print()
+        sys.exit(1)
 
     # Store
 
