@@ -104,6 +104,7 @@ if __name__ == "__main__":
 
     if len(sys.argv) < 2:
         print_instructions()
+        print()
         sys.exit(1)
 
     if sys.argv[1] == "--list-threads":
@@ -120,7 +121,8 @@ if __name__ == "__main__":
     except Exception:
         print_instructions()
         print()
-        print("Whoa, something went wrong. Check your thread URLs and arguments.")
+        print("Whoa, something went wrong.")
+        print("Check your thread URLs and arguments.")
         print()
         print("\n".join(thread_urls))
         print()
