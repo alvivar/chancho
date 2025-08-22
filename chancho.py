@@ -127,6 +127,31 @@ if __name__ == "__main__":
             print()
         sys.exit(0)
 
+    if sys.argv[1] == "--total":
+        total_threads = 0
+        total_pending = 0
+        total_downloaded = 0
+        total_failed = 0
+
+        for url in db:
+            entry = db[url]
+            pending = len(entry["links"]["pending"])
+            downloaded = len(entry["links"]["downloaded"])
+            failed = len(entry["links"]["failed"])
+
+            total_threads += 1
+            total_pending += pending
+            total_downloaded += downloaded
+            total_failed += failed
+
+        print(f"Total threads: {total_threads}")
+        print(f"Total downloaded: {total_downloaded}")
+        print(f"Total pending: {total_pending}")
+        print(f"Total failed: {total_failed}")
+        print()
+
+        sys.exit(0)
+
     thread_urls = sys.argv[1:]
     thread_urls = sorted(list(set(thread_urls)))
 
