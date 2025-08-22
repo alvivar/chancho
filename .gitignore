@@ -2,8 +2,4 @@ __pycache__/
 .vscode/
 *.pyc
 *.spec
-build/
 chanlist.json
-dist/
-downloads*/
-pruned.json
