@@ -35,7 +35,7 @@ def get_links(urls):
 
             print(url)
             print(title)
-            print(f"{len(links)} files found")
+            print(f"{len(links)} files")
             print()
 
             results.append((url, title, links))
@@ -49,6 +49,10 @@ def download_all(db):
     results = {}
 
     for key, value in db.items():
+        print(key)
+        print(value["title"])
+        print()
+
         board, id = get_board_id(key)
         results[key] = {
             "downloaded": [],
@@ -57,14 +61,17 @@ def download_all(db):
 
         for link in value["links"]["pending"]:
             success = download(
-                link["href"],
-                os.path.join(DOWNLOAD_DIR, board, id, link["href"].split("/")[-1]),
+                link,
+                os.path.join(DOWNLOAD_DIR, board, id, link.split("/")[-1]),
             )
 
             if success:
-                results[key]["downloaded"].append(link["href"])
+                results[key]["downloaded"].append(link)
             else:
-                results[key]["failed"].append(link["href"])
+                results[key]["failed"].append(link)
+
+            print(link)
+        print()
 
     return results
 
@@ -119,17 +126,13 @@ def update_db(db, url_title_links):
                 entry["pruned"] = current_time
                 continue
 
-            existing_links = {
-                link["href"]
-                for category_links in entry["links"].values()
-                for link in category_links
-            }
+            existing_links = set(
+                entry["links"]["pending"]
+                + entry["links"]["downloaded"]
+                + entry["links"]["failed"]
+            )
 
-            new_links = [
-                {"href": link, "found": current_time}
-                for link in links
-                if link not in existing_links
-            ]
+            new_links = [link for link in links if link not in existing_links]
 
             if new_links:
                 entry["updated"] = current_time
@@ -141,13 +144,34 @@ def update_db(db, url_title_links):
                 "updated": current_time,
                 "pruned": False,
                 "links": {
-                    "pending": [
-                        {"href": link, "found": current_time} for link in links
-                    ],
+                    "pending": links[:],
                     "downloaded": [],
                     "failed": [],
                 },
             }
+
+
+def update_db_downloads(db, results):
+    for key, value in results.items():
+        new_downloaded = set(value["downloaded"])
+        new_failed = set(value["failed"])
+
+        links = db[key]["links"]
+        pending = links["pending"]
+        downloaded = links["downloaded"]
+        failed = links["failed"]
+
+        remaining_pending = []
+
+        for link in pending:
+            if link in new_downloaded:
+                downloaded.append(link)
+            elif link in new_failed:
+                failed.append(link)
+            else:
+                remaining_pending.append(link)
+
+        links["pending"] = remaining_pending
 
 
 def save_db(db):
@@ -269,7 +293,7 @@ def main():
     # Scan
 
     thread_urls = args.thread_urls
-    if args.scan:
+    if args.scan or args.download:
         thread_urls.extend(db.keys())
     thread_urls = sorted(list(set(thread_urls)))
 
@@ -280,17 +304,19 @@ def main():
 
     try:
         results = get_links(thread_urls)
-    except Exception:
+    except Exception as e:
         parser.print_help()
         print()
         print("Whoa, something went wrong.")
         print("Check your thread URLs and arguments for errors.")
         print()
+        print(str(e).strip())
+        print()
         print("\n".join(thread_urls))
         print()
         sys.exit(1)
 
-    # Store results
+    # Update
 
     update_db(db, results)
     save_db(db)
@@ -301,10 +327,10 @@ def main():
         prepare_folders(db)
         results = download_all(db)
 
-        for key, value in results.items():
-            print(key)
-            print(value)
-            print()
+        # Update
+
+        update_db_downloads(db, results)
+        save_db(db)
 
 
 if __name__ == "__main__":
