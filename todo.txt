@@ -1,3 +1,11 @@
+To do
+- Create folders on demand (only if they are needed)
+- Add prune functionality
+- Make pyinstaller compatible
+
+23 August 2025
+- Scanning and downloading threads are working
+- Backed up old chancho versions in branches
 
 21 August 2025
-- A rewrite from scratch
+- Rewrote from scratch
