@@ -261,7 +261,7 @@ def main():
     parser.add_argument(
         "--download",
         action="store_true",
-        help="download all pending files",
+        help="scans again and downloads all pending files",
     )
 
     args = parser.parse_args()
@@ -310,7 +310,6 @@ def main():
         parser.print_help()
         print()
         print("Whoa, something went wrong.")
-        print("Check your thread URLs and arguments for errors.")
         print()
         print(str(e).strip())
         print()
