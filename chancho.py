@@ -261,7 +261,7 @@ def main():
     parser.add_argument(
         "--download",
         action="store_true",
-        help="scans again and downloads all pending files",
+        help="downloads all pending files",
     )
 
     args = parser.parse_args()
@@ -295,17 +295,23 @@ def main():
     # Scan
 
     thread_urls = args.thread_urls
-    if args.scan or args.download:
+    if args.scan:
         thread_urls.extend(db.keys())
     thread_urls = sorted(list(set(thread_urls)))
 
-    if not thread_urls:
+    if not thread_urls and not args.download:
         parser.print_help()
         print()
         sys.exit(1)
 
     try:
-        results = get_links(thread_urls)
+        # Update
+
+        if thread_urls:
+            results = get_links(thread_urls)
+            update_db(db, results)
+            save_db(db)
+
     except Exception as e:
         parser.print_help()
         print()
@@ -316,11 +322,6 @@ def main():
         print("\n".join(thread_urls))
         print()
         sys.exit(1)
-
-    # Update
-
-    update_db(db, results)
-    save_db(db)
 
     # Download
 
