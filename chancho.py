@@ -2,12 +2,14 @@ from datetime import datetime, timezone
 from playwright.sync_api import sync_playwright
 import argparse
 import json
+import os
 import requests
 import sys
 import time
 
 
 DB_FILE = "chandb.json"
+DOWNLOAD_DIR = "downloads"
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
 
@@ -31,11 +33,40 @@ def get_links(urls):
             title = page.title()
             page.close()
 
+            print(url)
+            print(title)
+            print(f"{len(links)} files found")
+            print()
+
             results.append((url, title, links))
 
         browser.close()
 
         return results
+
+
+def download_all(db):
+    results = {}
+
+    for key, value in db.items():
+        board, id = get_board_id(key)
+        results[key] = {
+            "downloaded": [],
+            "failed": [],
+        }
+
+        for link in value["links"]["pending"]:
+            success = download(
+                link["href"],
+                os.path.join(DOWNLOAD_DIR, board, id, link["href"].split("/")[-1]),
+            )
+
+            if success:
+                results[key]["downloaded"].append(link["href"])
+            else:
+                results[key]["failed"].append(link["href"])
+
+    return results
 
 
 def download(url, filename, max_retries=3):
@@ -124,6 +155,20 @@ def save_db(db):
         json.dump(db, f, indent=4, ensure_ascii=False)
 
 
+def get_board_id(url):
+    parts = url.split("/")  # https://boards.4chan.org/{board}/thread/{thread_id}
+    board = parts[-3]
+    thread_id = parts[-1]
+    return board, thread_id
+
+
+def prepare_folders(db):
+    for url in db:
+        board, thread_id = get_board_id(url)
+        thread_folder = os.path.join(DOWNLOAD_DIR, board, thread_id)
+        os.makedirs(thread_folder, exist_ok=True)
+
+
 def list_threads(db):
     for url in db:
         print(url)
@@ -187,6 +232,12 @@ def main():
         help="scan all existing threads in addition to provided urls",
     )
 
+    parser.add_argument(
+        "--download",
+        action="store_true",
+        help="download all pending files",
+    )
+
     args = parser.parse_args()
 
     CHANCHO = """
@@ -215,7 +266,7 @@ def main():
     if info_arg_used:
         return
 
-    # Scan mode
+    # Scan
 
     thread_urls = args.thread_urls
     if args.scan:
@@ -239,18 +290,21 @@ def main():
         print()
         sys.exit(1)
 
-    # Store
+    # Store results
 
     update_db(db, results)
     save_db(db)
 
-    # Print
+    # Download
 
-    for url, title, links in results:
-        print(url)
-        print(title)
-        print(f"{len(links)} files")
-        print()
+    if args.download:
+        prepare_folders(db)
+        results = download_all(db)
+
+        for key, value in results.items():
+            print(key)
+            print(value)
+            print()
 
 
 if __name__ == "__main__":
