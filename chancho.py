@@ -15,6 +15,7 @@ USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTM
 
 def get_links(urls):
     results = []
+
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(user_agent=USER_AGENT)
@@ -49,16 +50,13 @@ def download_all(db):
     results = {}
 
     for key, value in db.items():
-        print(key)
-        print(value["title"])
-        print()
-
         board, id = get_board_id(key)
         results[key] = {
             "downloaded": [],
             "failed": [],
         }
 
+        once = False
         for link in value["links"]["pending"]:
             success = download(
                 link,
@@ -70,8 +68,12 @@ def download_all(db):
             else:
                 results[key]["failed"].append(link)
 
-            print(link)
-        print()
+            once = True
+            name = link.split("/")[-1]
+            print(f"{board}/{id}/{name}")
+
+        if once:
+            print()
 
     return results
 
