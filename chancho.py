@@ -46,18 +46,21 @@ def get_links(urls):
         return results
 
 
-def download_all(db):
+def download_update_all(db):
     results = {}
 
     for key, value in db.items():
         board, id = get_board_id(key)
+        create_folders(board, id)
+
         results[key] = {
             "downloaded": [],
             "failed": [],
         }
 
         once = False
-        for link in value["links"]["pending"]:
+        all_pending = sorted(value["links"]["pending"] + value["links"]["failed"])
+        for link in all_pending:
             success = download(
                 link,
                 os.path.join(DOWNLOAD_DIR, board, id, link.split("/")[-1]),
@@ -65,8 +68,12 @@ def download_all(db):
 
             if success:
                 results[key]["downloaded"].append(link)
+                set_db_download(db, key, link, "downloaded")
             else:
                 results[key]["failed"].append(link)
+                set_db_download(db, key, link, "failed")
+
+            save_db(db)
 
             once = True
             name = link.split("/")[-1]
@@ -153,6 +160,23 @@ def update_db(db, url_title_links):
             }
 
 
+def set_db_download(db, thread_url, download_url, status):
+    if thread_url not in db:
+        return False
+
+    links = db[thread_url]["links"]
+
+    for link_list in links.values():
+        if download_url in link_list:
+            link_list.remove(download_url)
+
+    if status in ["pending", "downloaded", "failed"]:
+        links[status].append(download_url)
+        return True
+
+    return False
+
+
 def update_db_downloads(db, results):
     for key, value in results.items():
         new_downloaded = set(value["downloaded"])
@@ -188,11 +212,9 @@ def get_board_id(url):
     return board, thread_id
 
 
-def prepare_folders(db):
-    for url in db:
-        board, thread_id = get_board_id(url)
-        thread_folder = os.path.join(DOWNLOAD_DIR, board, thread_id)
-        os.makedirs(thread_folder, exist_ok=True)
+def create_folders(board, id):
+    thread_folder = os.path.join(DOWNLOAD_DIR, board, id)
+    os.makedirs(thread_folder, exist_ok=True)
 
 
 def list_threads(db):
@@ -323,16 +345,10 @@ def main():
         print()
         sys.exit(1)
 
-    # Download
+    # Download & Update
 
     if args.download:
-        prepare_folders(db)
-        results = download_all(db)
-
-        # Update
-
-        update_db_downloads(db, results)
-        save_db(db)
+        download_update_all(db)
 
 
 if __name__ == "__main__":
