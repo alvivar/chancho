@@ -51,7 +51,6 @@ def download_update_all(db):
 
     for url, entry in db.items():
         board, id = get_board_id(url)
-        create_folders(board, id)
 
         results[url] = {
             "downloaded": [],
@@ -61,6 +60,8 @@ def download_update_all(db):
         once = False
         all_pending = sorted(entry["links"]["pending"] + entry["links"]["failed"])
         for link in all_pending:
+            create_folders(board, id)
+
             success = download(
                 link,
                 os.path.join(DOWNLOAD_DIR, board, id, link.split("/")[-1]),
@@ -316,7 +317,6 @@ def main():
     if args.prune:
         prune_db(db)
         save_db(db)
-        return
 
     info_arg_used = False
     if args.list_threads and not args.list_info:
