@@ -49,17 +49,17 @@ def get_links(urls):
 def download_update_all(db):
     results = {}
 
-    for key, value in db.items():
-        board, id = get_board_id(key)
+    for url, entry in db.items():
+        board, id = get_board_id(url)
         create_folders(board, id)
 
-        results[key] = {
+        results[url] = {
             "downloaded": [],
             "failed": [],
         }
 
         once = False
-        all_pending = sorted(value["links"]["pending"] + value["links"]["failed"])
+        all_pending = sorted(entry["links"]["pending"] + entry["links"]["failed"])
         for link in all_pending:
             success = download(
                 link,
@@ -67,11 +67,11 @@ def download_update_all(db):
             )
 
             if success:
-                results[key]["downloaded"].append(link)
-                set_db_download(db, key, link, "downloaded")
+                results[url]["downloaded"].append(link)
+                set_db_download(db, url, link, "downloaded")
             else:
-                results[key]["failed"].append(link)
-                set_db_download(db, key, link, "failed")
+                results[url]["failed"].append(link)
+                set_db_download(db, url, link, "failed")
 
             save_db(db)
 
@@ -178,11 +178,11 @@ def set_db_download(db, thread_url, download_url, status):
 
 
 def update_db_downloads(db, results):
-    for key, value in results.items():
-        new_downloaded = set(value["downloaded"])
-        new_failed = set(value["failed"])
+    for url, entry in results.items():
+        new_downloaded = set(entry["downloaded"])
+        new_failed = set(entry["failed"])
 
-        links = db[key]["links"]
+        links = db[url]["links"]
         pending = links["pending"]
         downloaded = links["downloaded"]
         failed = links["failed"]
@@ -198,6 +198,15 @@ def update_db_downloads(db, results):
                 remaining_pending.append(link)
 
         links["pending"] = remaining_pending
+
+
+def prune_db(db):
+    for url, entry in list(db.items()):
+        if entry["pruned"]:
+            print(url)
+            print(entry["pruned"])
+            print()
+            del db[url]
 
 
 def save_db(db):
@@ -286,6 +295,12 @@ def main():
         help="downloads all pending files",
     )
 
+    parser.add_argument(
+        "--prune",
+        action="store_true",
+        help="prune all 404 threads",
+    )
+
     args = parser.parse_args()
 
     CHANCHO = """
@@ -296,7 +311,12 @@ def main():
 
     db = get_db()
 
-    # Handle commands
+    # Commands
+
+    if args.prune:
+        prune_db(db)
+        save_db(db)
+        return
 
     info_arg_used = False
     if args.list_threads and not args.list_info:
