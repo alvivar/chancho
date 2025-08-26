@@ -201,13 +201,45 @@ def update_db_downloads(db, results):
         links["pending"] = remaining_pending
 
 
-def prune_db(db):
+def prune(db):
     for url, entry in list(db.items()):
         if entry["pruned"]:
             print(url)
             print(entry["pruned"])
             print()
             del db[url]
+
+
+def validate_downloads(db):
+    for url, entry in db.items():
+        board, thread_id = get_board_id(url)
+        thread_folder = os.path.join(DOWNLOAD_DIR, board, thread_id)
+
+        links = entry["links"]
+        downloaded = links["downloaded"]
+        pending = links["pending"]
+
+        missing_files = []
+        remaining_downloaded = []
+
+        once = False
+        for download_url in downloaded:
+            filename = download_url.split("/")[-1]
+            file_path = os.path.join(thread_folder, filename)
+
+            if os.path.exists(file_path):
+                remaining_downloaded.append(download_url)
+
+            else:
+                once = True
+                print(f"{download_url}")
+                missing_files.append(download_url)
+
+        if once:
+            print()
+
+        links["downloaded"] = remaining_downloaded
+        pending.extend(missing_files)
 
 
 def save_db(db):
@@ -302,6 +334,12 @@ def main():
         help="prune all 404 threads",
     )
 
+    parser.add_argument(
+        "--validate",
+        action="store_true",
+        help="validate all downloaded files",
+    )
+
     args = parser.parse_args()
 
     CHANCHO = """
@@ -313,10 +351,6 @@ def main():
     db = get_db()
 
     # Commands
-
-    if args.prune:
-        prune_db(db)
-        save_db(db)
 
     info_arg_used = False
     if args.list_threads and not args.list_info:
@@ -332,6 +366,19 @@ def main():
         show_total(db)
 
     if info_arg_used:
+        return
+
+    # Maintenance
+
+    if args.prune:
+        prune(db)
+        save_db(db)
+
+    if args.validate:
+        validate_downloads(db)
+        save_db(db)
+
+    if not args.scan and not args.download:
         return
 
     # Scan
