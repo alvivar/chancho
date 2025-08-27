@@ -1,11 +1,14 @@
 To Do
 
+    - Maybe prune should delete failed files?
+    - Show help when no arguments are used
+    - When scanning, show newly found files
     - Make PyInstaller compatible (embed the browser?)
 
 Done
 
     25 August 2025
-    - Add prune functionality
+    - Added prune functionality
     - Check if we need to update the database between downloads (in case of a crash) instead of at the end
     - Create folders on demand (only if they are needed)
 
