@@ -70,15 +70,16 @@ def download_update_all(db):
             if success:
                 results[url]["downloaded"].append(link)
                 set_db_download(db, url, link, "downloaded")
+
+                name = link.split("/")[-1]
+                print(f"{board}/{id}/{name}")
+                once = True
+
             else:
                 results[url]["failed"].append(link)
                 set_db_download(db, url, link, "failed")
 
             save_db(db)
-
-            once = True
-            name = link.split("/")[-1]
-            print(f"{board}/{id}/{name}")
 
         if once:
             print()
@@ -104,12 +105,11 @@ def download(url, filename, max_retries=3):
         except (requests.RequestException, IOError) as e:
             if attempt < max_retries - 1:
                 wait_time = 2**attempt
-                print(
-                    f"Error downloading {url} (attempt {attempt + 1}): {e}. Retrying in {wait_time}s..."
-                )
+                print(f"{e}, attempt {attempt + 1}, retrying in {wait_time}s...")
                 time.sleep(wait_time)
             else:
-                print(f"Error downloading {url} after {max_retries} attempts: {e}")
+                print(f"{e}, after {max_retries} attempts")
+                print()
                 return False
 
 
@@ -273,7 +273,7 @@ def list_info(db):
         pending = len(links["pending"])
         downloaded = len(links["downloaded"])
         failed = len(links["failed"])
-        print(f"{downloaded} downloaded, {pending + failed} pending")
+        print(f"{downloaded} downloaded, {pending} pending, {failed} failed")
         print()
 
 
@@ -352,21 +352,14 @@ def main():
 
     # Commands
 
-    info_arg_used = False
     if args.list_threads and not args.list_info:
-        info_arg_used = True
         list_threads(db)
 
     if args.list_info:
-        info_arg_used = True
         list_info(db)
 
     if args.total:
-        info_arg_used = True
         show_total(db)
-
-    if info_arg_used:
-        return
 
     # Maintenance
 
@@ -378,9 +371,6 @@ def main():
         validate_downloads(db)
         save_db(db)
 
-    if not args.scan and not args.download:
-        return
-
     # Scan
 
     thread_urls = args.thread_urls
@@ -388,11 +378,18 @@ def main():
         thread_urls.extend(db.keys())
     thread_urls = sorted(list(set(thread_urls)))
 
-    if not thread_urls and not args.download:
+    if not (
+        thread_urls
+        or args.list_threads
+        or args.list_info
+        or args.total
+        or args.download
+        or args.prune
+        or args.validate
+    ):
         parser.print_help()
         print()
         sys.exit(1)
-
     try:
         # Update
 
