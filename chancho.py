@@ -1,11 +1,12 @@
-from datetime import datetime, timezone
-from playwright.sync_api import sync_playwright
 import argparse
 import json
 import os
-import requests
 import sys
 import time
+from datetime import datetime, timezone
+
+import requests
+from playwright.sync_api import sync_playwright
 
 
 DB_FILE = "chandb.json"
