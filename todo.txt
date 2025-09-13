@@ -1,11 +1,14 @@
 To Do
 
-    - Maybe prune should delete failed files?
-    - Show help when no arguments are used
-    - When scanning, show newly found files
     - Make PyInstaller compatible (embed the browser?)
+    - Maybe prune should clean up failed files?
+    - When scanning, show newly found files (yield refactor)
 
 Done
+
+    12 September 2025
+    - Prune should show the thread name (title)
+    - Show help when no arguments are provided
 
     25 August 2025
     - Added prune functionality
@@ -13,7 +16,7 @@ Done
     - Create folders on demand (only if they are needed)
 
     23 August 2025
-    - Scanning and downloading threads are working
+    - Scanning and downloading of threads are working
     - Backed up old Chancho versions in branches
 
     21 August 2025

@@ -206,6 +206,7 @@ def prune(db):
     for url, entry in list(db.items()):
         if entry["pruned"]:
             print(url)
+            print(entry["title"])
             print(entry["pruned"])
             print()
             del db[url]
