@@ -14,290 +14,6 @@ DOWNLOAD_DIR = "downloads"
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
 
-def get_links(urls):
-    results = []
-
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        context = browser.new_context(user_agent=USER_AGENT)
-
-        for url in urls:
-            page = context.new_page()
-            page.goto(url)
-
-            links = page.evaluate("""
-                () => {
-                    const links = Array.from(document.querySelectorAll('a[href*="4cdn"]'));
-                    return [...new Set(links.map(link => link.href))].sort();
-                }
-            """)
-
-            title = page.title()
-            page.close()
-
-            print(url)
-            print(title)
-            print(f"{len(links)} files")
-            print()
-
-            results.append((url, title, links))
-
-        browser.close()
-
-        return results
-
-
-def download_update_all(db):
-    results = {}
-
-    for url, entry in db.items():
-        board, id = get_board_id(url)
-
-        results[url] = {
-            "downloaded": [],
-            "failed": [],
-        }
-
-        once = False
-        all_pending = sorted(entry["links"]["pending"] + entry["links"]["failed"])
-        for link in all_pending:
-            create_folders(board, id)
-
-            success = download(
-                link,
-                os.path.join(DOWNLOAD_DIR, board, id, link.split("/")[-1]),
-            )
-
-            if success:
-                results[url]["downloaded"].append(link)
-                set_db_download(db, url, link, "downloaded")
-
-                name = link.split("/")[-1]
-                print(f"{board}/{id}/{name}")
-                once = True
-
-            else:
-                results[url]["failed"].append(link)
-                set_db_download(db, url, link, "failed")
-
-            save_db(db)
-
-        if once:
-            print()
-
-    return results
-
-
-def download(url, filename, max_retries=3):
-    headers = {"User-Agent": USER_AGENT}
-
-    for attempt in range(max_retries):
-        try:
-            response = requests.get(url, stream=True, headers=headers, timeout=30)
-            response.raise_for_status()
-
-            with open(filename, "wb") as f:
-                for chunk in response.iter_content(chunk_size=8192):
-                    if chunk:
-                        f.write(chunk)
-
-            return True
-
-        except (requests.RequestException, IOError) as e:
-            if attempt < max_retries - 1:
-                wait_time = 2**attempt
-                print(f"{e}, attempt {attempt + 1}, retrying in {wait_time}s...")
-                time.sleep(wait_time)
-            else:
-                print(f"{e}, after {max_retries} attempts")
-                print()
-                return False
-
-
-def get_db():
-    try:
-        with open(DB_FILE, "r", encoding="utf-8") as f:
-            db = json.load(f)
-    except Exception:
-        db = {}
-    return db
-
-
-def update_db(db, url_title_links):
-    current_time = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
-
-    for url, title, links in url_title_links:
-        if url in db:
-            entry = db[url]
-
-            if entry["pruned"]:
-                continue
-
-            if "404" in title and len(links) == 0:
-                entry["pruned"] = current_time
-                continue
-
-            existing_links = set(
-                entry["links"]["pending"]
-                + entry["links"]["downloaded"]
-                + entry["links"]["failed"]
-            )
-
-            new_links = [link for link in links if link not in existing_links]
-
-            if new_links:
-                entry["updated"] = current_time
-                entry["links"]["pending"].extend(new_links)
-        else:
-            db[url] = {
-                "title": title,
-                "found": current_time,
-                "updated": current_time,
-                "pruned": False,
-                "links": {
-                    "pending": links[:],
-                    "downloaded": [],
-                    "failed": [],
-                },
-            }
-
-
-def set_db_download(db, thread_url, download_url, status):
-    if thread_url not in db:
-        return False
-
-    links = db[thread_url]["links"]
-
-    for link_list in links.values():
-        if download_url in link_list:
-            link_list.remove(download_url)
-
-    if status in ["pending", "downloaded", "failed"]:
-        links[status].append(download_url)
-        return True
-
-    return False
-
-
-def update_db_downloads(db, results):
-    for url, entry in results.items():
-        new_downloaded = set(entry["downloaded"])
-        new_failed = set(entry["failed"])
-
-        links = db[url]["links"]
-        pending = links["pending"]
-        downloaded = links["downloaded"]
-        failed = links["failed"]
-
-        remaining_pending = []
-
-        for link in pending:
-            if link in new_downloaded:
-                downloaded.append(link)
-            elif link in new_failed:
-                failed.append(link)
-            else:
-                remaining_pending.append(link)
-
-        links["pending"] = remaining_pending
-
-
-def prune(db):
-    for url, entry in list(db.items()):
-        if entry["pruned"]:
-            print(url)
-            print(entry["title"])
-            print(entry["pruned"])
-            print()
-            del db[url]
-
-
-def validate_downloads(db):
-    for url, entry in db.items():
-        board, thread_id = get_board_id(url)
-        thread_folder = os.path.join(DOWNLOAD_DIR, board, thread_id)
-
-        links = entry["links"]
-        downloaded = links["downloaded"]
-        pending = links["pending"]
-
-        missing_files = []
-        remaining_downloaded = []
-
-        once = False
-        for download_url in downloaded:
-            filename = download_url.split("/")[-1]
-            file_path = os.path.join(thread_folder, filename)
-
-            if os.path.exists(file_path):
-                remaining_downloaded.append(download_url)
-
-            else:
-                once = True
-                print(f"{download_url}")
-                missing_files.append(download_url)
-
-        if once:
-            print()
-
-        links["downloaded"] = remaining_downloaded
-        pending.extend(missing_files)
-
-
-def save_db(db):
-    with open(DB_FILE, "w", encoding="utf-8") as f:
-        json.dump(db, f, indent=4, ensure_ascii=False)
-
-
-def get_board_id(url):
-    parts = url.split("/")  # https://boards.4chan.org/{board}/thread/{thread_id}
-    board = parts[-3]
-    thread_id = parts[-1]
-    return board, thread_id
-
-
-def create_folders(board, id):
-    thread_folder = os.path.join(DOWNLOAD_DIR, board, id)
-    os.makedirs(thread_folder, exist_ok=True)
-
-
-def list_threads(db):
-    for url in db:
-        print(url)
-    print()
-
-
-def list_info(db):
-    for url, entry in db.items():
-        print(url)
-        print(entry["title"])
-        links = entry["links"]
-        pending = len(links["pending"])
-        downloaded = len(links["downloaded"])
-        failed = len(links["failed"])
-        print(f"{downloaded} downloaded, {pending} pending, {failed} failed")
-        print()
-
-
-def show_total(db):
-    total_threads = len(db)
-    total_pending = 0
-    total_downloaded = 0
-    total_failed = 0
-
-    for entry in db.values():
-        links = entry["links"]
-        total_pending += len(links["pending"])
-        total_downloaded += len(links["downloaded"])
-        total_failed += len(links["failed"])
-
-    print(f"Total threads: {total_threads}")
-    print(f"Total downloaded: {total_downloaded}")
-    print(f"Total pending: {total_pending}")
-    print(f"Total failed: {total_failed}")
-    print()
-
-
 def main():
     parser = argparse.ArgumentParser(
         description="4chan thread scraper",
@@ -415,6 +131,311 @@ def main():
 
     if args.download:
         download_update_all(db)
+
+
+def get_links(urls):
+    results = []
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        context = browser.new_context(user_agent=USER_AGENT)
+
+        for url in urls:
+            page = context.new_page()
+            page.goto(url)
+
+            links = page.evaluate("""
+                () => {
+                    const links = Array.from(document.querySelectorAll('a[href*="4cdn"]'));
+                    return [...new Set(links.map(link => link.href))].sort();
+                }
+            """)
+
+            title = page.title()
+            page.close()
+
+            print(url)
+            print(title)
+            print(f"{len(links)} files")
+            print()
+
+            results.append((url, title, links))
+
+        browser.close()
+
+        return results
+
+
+def download_update_all(db):
+    results = {}
+
+    for url, entry in db.items():
+        board, id = get_board_id(url)
+
+        results[url] = {
+            "downloaded": [],
+            "failed": [],
+        }
+
+        once = False
+        all_pending = sorted(entry["links"]["pending"] + entry["links"]["failed"])
+        for link in all_pending:
+            create_folders(board, id)
+
+            success = download(
+                link,
+                os.path.join(DOWNLOAD_DIR, board, id, link.split("/")[-1]),
+            )
+
+            if success:
+                results[url]["downloaded"].append(link)
+                set_db_download(db, url, link, "downloaded")
+
+                name = link.split("/")[-1]
+                print(f"{board}/{id}/{name}")
+                once = True
+
+            else:
+                results[url]["failed"].append(link)
+                set_db_download(db, url, link, "failed")
+
+            save_db(db)
+
+        if once:
+            print()
+
+    return results
+
+
+def download(url, filename, max_retries=3):
+    headers = {"User-Agent": USER_AGENT}
+
+    for attempt in range(max_retries):
+        try:
+            response = requests.get(url, stream=True, headers=headers, timeout=30)
+            response.raise_for_status()
+
+            with open(filename, "wb") as f:
+                for chunk in response.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+
+            return True
+
+        except (requests.RequestException, IOError) as e:
+            if attempt < max_retries - 1:
+                wait_time = 2**attempt
+                print(f"{e}, attempt {attempt + 1}, retrying in {wait_time}s...")
+                time.sleep(wait_time)
+            else:
+                print(f"{e}, after {max_retries} attempts")
+                print()
+                return False
+
+
+def get_db():
+    try:
+        with open(DB_FILE, "r", encoding="utf-8") as f:
+            db = json.load(f)
+    except Exception:
+        db = {}
+    return db
+
+
+def save_db(db):
+    with open(DB_FILE, "w", encoding="utf-8") as f:
+        json.dump(db, f, indent=4, ensure_ascii=False)
+
+
+def update_db(db, url_title_links):
+    current_time = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+    for url, title, links in url_title_links:
+        if url in db:
+            entry = db[url]
+
+            if entry["pruned"]:
+                continue
+
+            if "404" in title and len(links) == 0:
+                entry["pruned"] = current_time
+                continue
+
+            existing_links = set(
+                entry["links"]["pending"]
+                + entry["links"]["downloaded"]
+                + entry["links"]["failed"]
+            )
+
+            new_links = [link for link in links if link not in existing_links]
+
+            if new_links:
+                entry["updated"] = current_time
+                entry["links"]["pending"].extend(new_links)
+        else:
+            db[url] = {
+                "title": title,
+                "found": current_time,
+                "updated": current_time,
+                "pruned": False,
+                "links": {
+                    "pending": links[:],
+                    "downloaded": [],
+                    "failed": [],
+                },
+            }
+
+
+def set_db_download(db, thread_url, download_url, status):
+    if thread_url not in db:
+        return False
+
+    links = db[thread_url]["links"]
+
+    for link_list in links.values():
+        if download_url in link_list:
+            link_list.remove(download_url)
+
+    if status in ["pending", "downloaded", "failed"]:
+        links[status].append(download_url)
+        return True
+
+    return False
+
+
+def update_db_downloads(db, results):
+    for url, entry in results.items():
+        new_downloaded = set(entry["downloaded"])
+        new_failed = set(entry["failed"])
+
+        links = db[url]["links"]
+        pending = links["pending"]
+        downloaded = links["downloaded"]
+        failed = links["failed"]
+
+        remaining_pending = []
+
+        for link in pending:
+            if link in new_downloaded:
+                downloaded.append(link)
+            elif link in new_failed:
+                failed.append(link)
+            else:
+                remaining_pending.append(link)
+
+        links["pending"] = remaining_pending
+
+
+def validate_downloads(db):
+    for url, entry in db.items():
+        board, thread_id = get_board_id(url)
+        thread_folder = os.path.join(DOWNLOAD_DIR, board, thread_id)
+
+        links = entry["links"]
+        downloaded = links["downloaded"]
+        pending = links["pending"]
+
+        missing_files = []
+        remaining_downloaded = []
+
+        once = False
+        for download_url in downloaded:
+            filename = download_url.split("/")[-1]
+            file_path = os.path.join(thread_folder, filename)
+
+            if os.path.exists(file_path):
+                remaining_downloaded.append(download_url)
+
+            else:
+                once = True
+                print(f"{download_url}")
+                missing_files.append(download_url)
+
+        if once:
+            print()
+
+        links["downloaded"] = remaining_downloaded
+        pending.extend(missing_files)
+
+
+def prune(db):
+    for url, entry in list(db.items()):
+        if entry["pruned"]:
+            print(url)
+            print(entry["title"])
+            print(time_ago(entry["pruned"]))
+            print()
+            del db[url]
+
+
+def list_threads(db):
+    for url in db:
+        print(url)
+    print()
+
+
+def list_info(db):
+    for url, entry in db.items():
+        print(url)
+        print(entry["title"])
+        links = entry["links"]
+        pending = len(links["pending"])
+        downloaded = len(links["downloaded"])
+        failed = len(links["failed"])
+        print(f"{downloaded} downloaded, {pending} pending, {failed} failed")
+        print()
+
+
+def show_total(db):
+    total_threads = len(db)
+    total_pending = 0
+    total_downloaded = 0
+    total_failed = 0
+
+    for entry in db.values():
+        links = entry["links"]
+        total_pending += len(links["pending"])
+        total_downloaded += len(links["downloaded"])
+        total_failed += len(links["failed"])
+
+    print(f"Total threads: {total_threads}")
+    print(f"Total downloaded: {total_downloaded}")
+    print(f"Total pending: {total_pending}")
+    print(f"Total failed: {total_failed}")
+    print()
+
+
+def get_board_id(url):
+    parts = url.split("/")  # https://boards.4chan.org/{board}/thread/{thread_id}
+    board = parts[-3]
+    thread_id = parts[-1]
+    return board, thread_id
+
+
+def create_folders(board, id):
+    thread_folder = os.path.join(DOWNLOAD_DIR, board, id)
+    os.makedirs(thread_folder, exist_ok=True)
+
+
+def time_ago(iso_time_str):
+    try:
+        past_time = datetime.fromisoformat(iso_time_str.replace("Z", "+00:00"))
+        current_time = datetime.now(timezone.utc)
+        total_seconds = int((current_time - past_time).total_seconds())
+
+        if total_seconds < 60:
+            return f"{total_seconds} seconds ago"
+        elif total_seconds < 3600:
+            minutes = total_seconds // 60
+            return f"{minutes} minute{'s' if minutes != 1 else ''} ago"
+        elif total_seconds < 86400:
+            hours = total_seconds // 3600
+            return f"{hours} hour{'s' if hours != 1 else ''} ago"
+        else:
+            days = total_seconds // 86400
+            return f"{days} day{'s' if days != 1 else ''} ago"
+    except (ValueError, TypeError):
+        return "unknown time"
 
 
 if __name__ == "__main__":
