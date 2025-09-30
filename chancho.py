@@ -376,12 +376,14 @@ def list_threads(db):
 
 def list_info(db):
     for url, entry in db.items():
-        print(url)
-        print(entry["title"])
         links = entry["links"]
         pending = len(links["pending"])
         downloaded = len(links["downloaded"])
         failed = len(links["failed"])
+
+        print(url)
+        print(entry["title"])
+        print(f"Found {time_ago(entry['found'])}, updated {time_ago(entry['updated'])}")
         print(f"{downloaded} downloaded, {pending} pending, {failed} failed")
         print()
 
