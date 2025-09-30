@@ -11,7 +11,7 @@ from playwright.sync_api import sync_playwright
 
 DB_FILE = "chandb.json"
 DOWNLOAD_DIR = "downloads"
-USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
 
 
 def main():
@@ -361,10 +361,19 @@ def validate_downloads(db):
 def prune(db):
     for url, entry in list(db.items()):
         if entry["pruned"]:
+            links = entry["links"]
+            pending = len(links["pending"])
+            downloaded = len(links["downloaded"])
+            failed = len(links["failed"])
+
             print(url)
             print(entry["title"])
-            print(time_ago(entry["pruned"]))
+            print(f"{downloaded} downloaded, {pending} pending, {failed} failed")
+            print(
+                f"Found {time_ago(entry['found'])}, pruned {time_ago(entry['pruned'])}"
+            )
             print()
+
             del db[url]
 
 
@@ -383,8 +392,8 @@ def list_info(db):
 
         print(url)
         print(entry["title"])
-        print(f"Found {time_ago(entry['found'])}, updated {time_ago(entry['updated'])}")
         print(f"{downloaded} downloaded, {pending} pending, {failed} failed")
+        print(f"Found {time_ago(entry['found'])}, updated {time_ago(entry['updated'])}")
         print()
 
 
@@ -422,20 +431,22 @@ def create_folders(board, id):
 def time_ago(iso_time_str):
     try:
         past_time = datetime.fromisoformat(iso_time_str.replace("Z", "+00:00"))
-        current_time = datetime.now(timezone.utc)
-        total_seconds = int((current_time - past_time).total_seconds())
+        total_seconds = int((datetime.now(timezone.utc) - past_time).total_seconds())
 
         if total_seconds < 60:
             return f"{total_seconds} seconds ago"
-        elif total_seconds < 3600:
+
+        if total_seconds < 3600:
             minutes = total_seconds // 60
             return f"{minutes} minute{'s' if minutes != 1 else ''} ago"
-        elif total_seconds < 86400:
+
+        if total_seconds < 86400:
             hours = total_seconds // 3600
             return f"{hours} hour{'s' if hours != 1 else ''} ago"
-        else:
-            days = total_seconds // 86400
-            return f"{days} day{'s' if days != 1 else ''} ago"
+
+        days = total_seconds // 86400
+        return f"{days} day{'s' if days != 1 else ''} ago"
+
     except (ValueError, TypeError):
         return "unknown time"
 
