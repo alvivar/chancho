@@ -1,6 +1,7 @@
 import argparse
 import json
 import os
+import random
 import sys
 import time
 from datetime import datetime, timezone
@@ -137,10 +138,12 @@ def get_links(urls):
     results = []
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = p.chromium.launch(headless=False)
         context = browser.new_context(user_agent=USER_AGENT)
 
         for url in urls:
+            time.sleep(random.uniform(1, 4))
+
             page = context.new_page()
             page.goto(url)
 
@@ -171,6 +174,7 @@ def download_update_all(db):
 
     for url, entry in db.items():
         board, id = get_board_id(url)
+        create_folders(board, id)
 
         results[url] = {
             "downloaded": [],
@@ -180,7 +184,7 @@ def download_update_all(db):
         once = False
         all_pending = sorted(entry["links"]["pending"] + entry["links"]["failed"])
         for link in all_pending:
-            create_folders(board, id)
+            time.sleep(random.uniform(0.1, 1))
 
             success = download(
                 link,
