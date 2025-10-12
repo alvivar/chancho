@@ -3,4 +3,4 @@ __pycache__/
 *.pyc
 *.spec
 chandb.json*
-downloads/
+downloads*/
