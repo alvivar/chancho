@@ -142,7 +142,7 @@ def get_links(urls):
         context = browser.new_context(user_agent=USER_AGENT)
 
         for url in urls:
-            time.sleep(random.uniform(1, 4))
+            time.sleep(random.uniform(0.1, 4))
 
             page = context.new_page()
             page.goto(url)
