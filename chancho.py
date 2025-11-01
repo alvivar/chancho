@@ -14,6 +14,11 @@ DB_FILE = "chandb.json"
 DOWNLOAD_DIR = "downloads"
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"
 
+SCAN_MIN_DELAY = 0.1
+SCAN_MAX_DELAY = 4
+DOWNLOAD_MIN_SLEEP = 0.1
+DOWNLOAD_MAX_SLEEP = 1
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -142,7 +147,7 @@ def get_links(urls):
         context = browser.new_context(user_agent=USER_AGENT)
 
         for url in urls:
-            time.sleep(random.uniform(0.1, 4))
+            time.sleep(random.uniform(SCAN_MIN_DELAY, SCAN_MAX_DELAY))
 
             page = context.new_page()
             page.goto(url)
@@ -184,7 +189,7 @@ def download_update_all(db):
         once = False
         all_pending = sorted(entry["links"]["pending"] + entry["links"]["failed"])
         for link in all_pending:
-            time.sleep(random.uniform(0.1, 1))
+            time.sleep(random.uniform(DOWNLOAD_MIN_SLEEP, DOWNLOAD_MAX_SLEEP))
 
             success = download(
                 link,
@@ -305,29 +310,6 @@ def set_db_download(db, thread_url, download_url, status):
         return True
 
     return False
-
-
-def update_db_downloads(db, results):
-    for url, entry in results.items():
-        new_downloaded = set(entry["downloaded"])
-        new_failed = set(entry["failed"])
-
-        links = db[url]["links"]
-        pending = links["pending"]
-        downloaded = links["downloaded"]
-        failed = links["failed"]
-
-        remaining_pending = []
-
-        for link in pending:
-            if link in new_downloaded:
-                downloaded.append(link)
-            elif link in new_failed:
-                failed.append(link)
-            else:
-                remaining_pending.append(link)
-
-        links["pending"] = remaining_pending
 
 
 def validate_downloads(db):
