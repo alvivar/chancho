@@ -181,57 +181,59 @@ def get_links(urls):
 def download_update_all(db):
     results = {}
 
-    for url, entry in db.items():
-        board, id = get_board_id(url)
-        create_folders(board, id)
+    with requests.Session() as session:
+        session.headers["User-Agent"] = USER_AGENT
 
-        results[url] = {
-            "downloaded": [],
-            "failed": [],
-        }
+        for url, entry in db.items():
+            board, id = get_board_id(url)
+            create_folders(board, id)
 
-        once = False
-        all_pending = sorted(entry["links"]["pending"] + entry["links"]["failed"])
-        for link in all_pending:
-            time.sleep(random.uniform(DOWNLOAD_MIN_SLEEP, DOWNLOAD_MAX_SLEEP))
+            results[url] = {
+                "downloaded": [],
+                "failed": [],
+            }
 
-            success = download(
-                link,
-                os.path.join(DOWNLOAD_DIR, board, id, link.split("/")[-1]),
-            )
+            once = False
+            all_pending = sorted(entry["links"]["pending"] + entry["links"]["failed"])
+            for link in all_pending:
+                time.sleep(random.uniform(DOWNLOAD_MIN_SLEEP, DOWNLOAD_MAX_SLEEP))
 
-            if success:
-                results[url]["downloaded"].append(link)
-                set_db_download(db, url, link, "downloaded")
+                success = download(
+                    link,
+                    os.path.join(DOWNLOAD_DIR, board, id, link.split("/")[-1]),
+                    session,
+                )
 
-                name = link.split("/")[-1]
-                print(f"{board}/{id}/{name}")
-                once = True
+                if success:
+                    results[url]["downloaded"].append(link)
+                    set_db_download(db, url, link, "downloaded")
 
-            else:
-                results[url]["failed"].append(link)
-                set_db_download(db, url, link, "failed")
+                    name = link.split("/")[-1]
+                    print(f"{board}/{id}/{name}")
+                    once = True
 
-            save_db(db)
+                else:
+                    results[url]["failed"].append(link)
+                    set_db_download(db, url, link, "failed")
 
-        if once:
-            print()
+                save_db(db)
+
+            if once:
+                print()
 
     return results
 
 
-def download(url, filename, max_retries=3):
-    headers = {"User-Agent": USER_AGENT}
-
+def download(url, filename, session, max_retries=3):
     for attempt in range(max_retries):
         try:
-            response = requests.get(url, stream=True, headers=headers, timeout=30)
-            response.raise_for_status()
+            with session.get(url, stream=True, timeout=30) as response:
+                response.raise_for_status()
 
-            with open(filename, "wb") as f:
-                for chunk in response.iter_content(chunk_size=8192):
-                    if chunk:
-                        f.write(chunk)
+                with open(filename, "wb") as f:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        if chunk:
+                            f.write(chunk)
 
             return True
 
@@ -324,6 +326,7 @@ def validate_downloads(db):
         links = entry["links"]
         downloaded = links["downloaded"]
         pending = links["pending"]
+        failed = links["failed"]
 
         missing_files = []
         remaining_downloaded = []
@@ -340,6 +343,21 @@ def validate_downloads(db):
                 once = True
                 print(f"{download_url}")
                 missing_files.append(download_url)
+
+        # A link sitting in pending/failed with its final file on disk is a
+        # leftover from an aborted download: delete the file so the next
+        # --download starts from zero.
+        for download_url in sorted(set(pending + failed) - set(downloaded)):
+            filename = download_url.split("/")[-1]
+            file_path = os.path.join(thread_folder, filename)
+
+            if os.path.exists(file_path):
+                once = True
+                try:
+                    os.remove(file_path)
+                    print(f"stale: {download_url}")
+                except OSError as e:
+                    print(f"stale (could not remove: {e}): {download_url}")
 
         if once:
             print()
