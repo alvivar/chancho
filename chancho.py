@@ -2,9 +2,11 @@ import argparse
 import json
 import os
 import random
+import re
 import sys
 import time
 from datetime import datetime, timezone
+from urllib.parse import urlparse
 
 import requests
 from playwright.sync_api import sync_playwright
@@ -18,6 +20,8 @@ SCAN_MIN_DELAY = 0.1
 SCAN_MAX_DELAY = 4
 DOWNLOAD_MIN_SLEEP = 0.1
 DOWNLOAD_MAX_SLEEP = 1
+
+_THREAD_RE = re.compile(r"^/([a-z0-9]+)/thread/(\d+)(?:/|$)")
 
 
 def main():
@@ -403,10 +407,12 @@ def show_total(db):
 
 
 def get_board_id(url):
-    parts = url.split("/")  # https://boards.4chan.org/{board}/thread/{thread_id}
-    board = parts[-3]
-    thread_id = parts[-1]
-    return board, thread_id
+    # Path must start with /<board>/thread/<id>, ending at "/" or end-of-string
+    # so trailing slugs like /thread/123/some-title still resolve to id 123.
+    match = _THREAD_RE.match(urlparse(url).path)
+    if not match:
+        raise ValueError(f"Malformed thread URL: {url}")
+    return match.group(1), match.group(2)
 
 
 def create_folders(board, id):
