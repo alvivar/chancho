@@ -7,37 +7,37 @@
     "default": [
       {
         "name": "opus",
+        "icon": "sparkle",
+        "color": "terminal.ansiBrightMagenta",
         "focus": true,
         "autoExecuteCommands": true,
-        "icon": "hubot",
-        "color": "terminal.ansiMagenta",
         "commands": [
           "source C:/Users/andre/miniconda3/etc/profile.d/conda.sh && conda activate chancho && pi-link opus@chancho"
         ]
       },
       {
         "name": "gpt",
-        "autoExecuteCommands": true,
         "icon": "copilot",
         "color": "terminal.ansiGreen",
+        "autoExecuteCommands": true,
         "commands": [
           "source C:/Users/andre/miniconda3/etc/profile.d/conda.sh && conda activate chancho && pi-link gpt@chancho"
         ]
       },
       {
         "name": "committer",
-        "autoExecuteCommands": true,
         "icon": "git-commit",
         "color": "terminal.ansiYellow",
+        "autoExecuteCommands": true,
         "commands": [
           "source C:/Users/andre/miniconda3/etc/profile.d/conda.sh && conda activate chancho && pi --session $(pi-link resolve committer@chancho)"
         ]
       },
       {
         "name": "bash",
-        "autoExecuteCommands": true,
         "icon": "terminal-bash",
         "color": "terminal.ansiWhite",
+        "autoExecuteCommands": true,
         "commands": [
           "source C:/Users/andre/miniconda3/etc/profile.d/conda.sh && conda activate chancho"
         ]
