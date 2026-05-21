@@ -1,6 +1,6 @@
 # chancho
 
-````
+```
       ___&
     e'^_ )
       " "
@@ -17,14 +17,19 @@ options:
   --list-info     list detailed information about all threads
   --total         show total statistics
   --scan          scan all existing threads in addition to provided urls
-  --download      scans again and downloads all pending files```
+  --download      downloads all pending files
+  --prune         prune all 404 threads
+  --validate      validate all downloaded files
+```
 
-Chancho is a 4chan thread downloader. It creates a `chandb.json` file as a registry for tracking files.
+Chancho is a 4chan thread downloader. It tracks files in `chandb.json` in the working directory and stores downloads under `downloads/`.
 
 ## Setup
 
-Install dependencies using `requirements.txt`, then install [Playwright](https://playwright.dev/python/docs/intro):
+Install Python dependencies:
 
-```bash
-playwright install
-````
+    pip install -r requirements.txt
+
+Then install the headless browser used by Playwright:
+
+    playwright install
