@@ -26,10 +26,37 @@ Chancho is a 4chan thread downloader. It tracks files in `chandb.json` in the wo
 
 ## Setup
 
-Install Python dependencies:
+The supported environment uses Python 3.14.10. Create it with Conda:
 
-    pip install -r requirements.txt
+    conda env create -f environment.yml
+    conda activate chancho
 
-Then install the headless browser used by Playwright:
+Alternatively, use an isolated Python 3.14.10 environment and install:
 
-    playwright install
+    python -m pip install -r requirements.txt
+
+Install only the Chromium headless shell used by this app (Firefox, WebKit and
+full Chromium are not needed):
+
+    python -m playwright install chromium --only-shell
+
+Run Chancho from the project directory:
+
+    python chancho.py --help
+
+## Environment maintenance
+
+`requirements.txt` pins both direct and transitive runtime dependencies. Testing
+plugins such as `pytest-playwright` are not required to run the app.
+
+When upgrading, update the pins in `requirements.txt` and the Python version in
+`environment.yml`, reinstall the dependencies, and repeat the browser install
+command above. Playwright requires its matching browser revision; updating the
+Python package alone is not enough.
+
+Check dependency consistency after installation:
+
+    python -m pip check
+
+Playwright's browser cache is shared with other environments. Do not delete
+browser directories needed by other projects.

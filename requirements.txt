@@ -1,2 +1,10 @@
-playwright
-requests
+# Runtime dependencies (validated with Python 3.14.10).
+playwright==1.65.2
+requests==2.34.2
+
+# Transitive dependencies pinned to keep clean installs consistent.
+certifi==2026.10.23
+charset-normalizer==3.5.2
+greenlet==3.5.6
+idna==3.20
+urllib3==2.8.0

@@ -1,0 +1,8 @@
+name: chancho
+channels:
+  - defaults
+dependencies:
+  - python=3.14.10
+  - pip
+  - pip:
+      - -r requirements.txt
